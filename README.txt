@@ -96,8 +96,8 @@ From this overview, check out the README for each language to see what chapters
 and problems were successfully implemented. The schemes are labelled with 
 source, chapter, followed by number. For example, the chapter 5 homework 
 problem 1a is labelled as: hw5_1a and a call to attack on that homework problem 
-would be hw5_1aPrgAttack(). Problems can come from homework (hw), examples (ex),
-and exercises (ec). Since example attacks don't have clear numbers, we'll use 
+would be hw5_1aPrgAttack(). Problems can come from homework (hw), section examples (se),
+and exercises (ex). Since example attacks don't have clear numbers, we'll use 
 the section number that the example appears in. 
 There should also be an example solution in each language to demonstrate how 
 an attacking program is constructed and called, probably the example in chapter 
