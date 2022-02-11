@@ -11,13 +11,15 @@ This interface will run the attacking program once and check for correctness.
 Often a security definition is attacked by distinguishing between left and right 
 or real and random, so calling this interface will select one implementation at 
 random, for example left or real, and see if your attacking program can correctly 
-distinguish between them. 
+distinguish between them. It will then return a true or a false to indicate 
+if the attacking program succeeded.
 
 ensSdfAdvantage(size, trials, attackFun):
 This interface will basically call sdfAttack() trials times to compute an 
-advantage. Sometimes an attacking program has a significant advantage but 
-occaisonally fails, so running many trials to see if the attacker distinguishes 
-correctly gives a more accurate depiction of the attacker's capability. 
+advantage which will be returned as a decimal value. Sometimes an attacking 
+program has a significant advantage but occaisonally fails, so running many 
+trials to see if the attacker distinguishes correctly gives a more accurate 
+depiction of the attacker's capability. 
 
 For example, suppose we want to attack the one time secrecy of one time pad, 
 then we could call otpOtsAttack(). The size and trials are parameters so 
@@ -26,11 +28,12 @@ The way the parameters are passed are language specific, see the README in the
 corresponding folders.
 
 The attacking function shall accept a size parameter and a security definition 
-object. Again, see the README for your particular language for specific syntax. 
-This object has members or methods that are defined for that security defnition,
-for example one time secrecy has an EAVESDROP() method, so attacking functions 
-passed to otpOtsAttack() will be given an object that has an EAVESDROP() method.
-The following methods should be implemented for each security defnition:
+object and return a value indicating the attack's guess. Again, see the README 
+for your particular language for specific syntax.  This object has members or 
+methods that are defined for that security defnition, for example one time 
+secrecy has an EAVESDROP() method, so attacking functions passed to otpOtsAttack() 
+will be given an object that has an EAVESDROP() method.  The following methods should 
+be implemented for each security defnition:
 
 One Time Secrecy (Ots) and Chosen Plaintext Attack (Cpa):
 EAVESDROP(size, mL, mR):
