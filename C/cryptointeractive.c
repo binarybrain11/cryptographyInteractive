@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include "cryptointeractive.h"
 
+/* Global variables to persist between library calls. */
+char* KEY = NULL;
+
 char* randomBytes(ssize_t lambda){
     int random = open("/dev/urandom", O_RDONLY);
     if (random < 0){
@@ -429,6 +432,85 @@ double hw5_1cPrgAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ss
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
         advantage += hw5_1cPrgAttack(lambda, attack);
+    }
+    return advantage/(double) trials;
+}
+
+/* ==================================================================
+ * CHAPTER 6
+ * ==================================================================
+ */
+/* Chapter 6 Homework Problem 1 */
+char* hw6_1Prf(ssize_t lambda, char* k, char* m){
+    
+}
+
+char* hw6_1EAVESDROPL(ssize_t lambda, char* mL, char* mR){
+    char* key = hw2_1KeyGen(lambda);
+    char* c = otpEnc(lambda, key, mL);
+    free(key);
+    return c;
+}
+
+char* hw6_1EAVESDROPR(ssize_t lambda, char* mL, char* mR){
+    char* key = hw2_1KeyGen(lambda);
+    char* c = otpEnc(lambda, key, mR);
+    free(key);
+    return c;
+}
+
+char* hw6_1CTXTreal(ssize_t lambda, char* m){
+    char* key = hw2_1KeyGen(lambda);
+    char* c = otpEnc(lambda, key, m);
+    free(key);
+    return c;
+}
+
+char* hw6_1CTXTrandom(ssize_t lambda, char* m){
+    return randomBytes(lambda);
+}
+
+int hw6_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+    Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    char* choice = randomBytes(1);
+    if (*choice & 1){
+        scheme.EAVESDROP = hw2_1EAVESDROPL;
+    } else {
+        scheme.EAVESDROP = hw2_1EAVESDROPR;
+    }
+    if (*choice & 2){
+        scheme.CTXT = hw2_1CTXTrandom;
+    } else {
+        scheme.CTXT = hw2_1CTXTreal;
+    }
+    char result = attack(lambda, &scheme);
+    if ((*choice & 1) == 1 && result == 'L'){
+        free(choice);
+        return 1;
+    } 
+    if ((*choice & 1) == 0 && result == 'R'){
+        free(choice);
+        return 1;
+    } 
+
+    if ((*choice & 2) == 2 && result == '$'){
+        free(choice);
+        return 1;
+    } 
+
+    if ((*choice & 2) == 0 && result == 'r'){
+        free(choice);
+        return 1;
+    } 
+    
+    free(choice);
+    return 0;
+}
+
+double hw2_1OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+    double advantage = 0;
+    for (unsigned int i=0; i<trials; i++){
+        advantage += hw2_1OtsAttack(lambda, attack);
     }
     return advantage/(double) trials;
 }
