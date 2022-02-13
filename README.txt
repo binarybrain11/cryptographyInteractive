@@ -92,8 +92,9 @@ Block Ciphers:
 Some of the chapters discuss block ciphers. In this case, functions have 
 an extra parameter blocks that describes the number of blocks of size bytes
 that are in the message or ciphertext parameters. EAVESDROP() is a function 
-that has two parameters, in this case blocks describes both parameters since
-there is a trivial attack on EAVESDROP() when the messages differ in length.
+that has two message parameters, in this case blocks describes both parameters 
+since there is a trivial attack on EAVESDROP() when the messages differ in 
+length.
 
 From this overview, check out the README for each language to see what chapters 
 and problems were successfully implemented. The schemes are labelled with 

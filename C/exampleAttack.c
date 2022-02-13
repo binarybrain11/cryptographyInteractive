@@ -7,8 +7,12 @@ char se2_3OtsExampleAttack(ssize_t lambda, Scheme *scheme){
     char* m = zeroBytes(lambda);
     char* c = scheme->CTXT(lambda, m);
     if (isEqual(lambda, m, c)){
+        free(m);
+        free(c);
         return 'r';
     } else {
+        free(m);
+        free(c);
         return '$';
     }
 }
