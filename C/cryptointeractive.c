@@ -50,6 +50,30 @@ char* oneBytes(ssize_t lambda){
     return bytes;
 }
 
+char* xorBytes(ssize_t lambda, char* a, char* b){
+    char* res = malloc(sizeof(char)*lambda);
+    for (ssize_t i=0; i<lambda; i++){
+        res[i] = a[i] ^ b[i];
+    }
+    return res;
+}
+
+char* andBytes(ssize_t lambda, char* a, char* b){
+    char* res = malloc(sizeof(char)*lambda);
+    for (ssize_t i=0; i<lambda; i++){
+        res[i] = a[i] & b[i];
+    }
+    return res;
+}
+
+char* andBytes(ssize_t lambda, char* a, char* b){
+    char* res = malloc(sizeof(char)*lambda);
+    for (ssize_t i=0; i<lambda; i++){
+        res[i] = a[i] | b[i];
+    }
+    return res;
+}
+
 int isEqual(ssize_t lambda, char* a, char* b){
     char res = 0;
     for (ssize_t i=0; i<lambda; i++){
@@ -507,10 +531,10 @@ int hw6_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double hw2_1OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double hw6_1OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += hw2_1OtsAttack(lambda, attack);
+        advantage += hw6_1OtsAttack(lambda, attack);
     }
     return advantage/(double) trials;
 }

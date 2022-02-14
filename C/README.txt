@@ -31,6 +31,12 @@ char* oneBytes(ssize_t lambda);
 This function returns lambda bytes of one bytes. 
 char* randomBytes(ssize_t lambda);
 This function returns lambda bytes of random bytes generated from /dev/urandom.
+char* xorBytes(ssize_t lambda, char* a, char* b);
+This function performs xor on a and b.
+char* andBytes(ssize_t lambda, char* a, char* b);
+This function performs and on a and b.
+char* orBytes(ssize_t lambda, char* a, char* b);
+This function performs or on a and b.
 int isEqual(ssize_t lambda, char* a, char* b);
 This function checks whether the first lambda bytes pointed to by a and b are 
 equal. Returns 1 if they are, 0 if they aren't.

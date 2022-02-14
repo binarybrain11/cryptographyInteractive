@@ -22,6 +22,9 @@ typedef struct {
 char* zeroBytes(ssize_t lambda);
 char* oneBytes(ssize_t lambda);
 char* randomBytes(ssize_t lambda);
+char* xorBytes(ssize_t lambda, char* a, char* b);
+char* andBytes(ssize_t lambda, char* a, char* b);
+char* orBytes(ssize_t lambda, char* a, char* b);
 int isEqual(ssize_t lambda, char* a, char* b);
 
 /* Chapter 2 section 3 example */
