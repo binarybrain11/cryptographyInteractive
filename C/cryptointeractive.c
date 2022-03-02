@@ -66,7 +66,7 @@ char* andBytes(ssize_t lambda, char* a, char* b){
     return res;
 }
 
-char* andBytes(ssize_t lambda, char* a, char* b){
+char* orBytes(ssize_t lambda, char* a, char* b){
     char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] | b[i];
