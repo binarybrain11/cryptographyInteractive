@@ -6,7 +6,7 @@ Each library will contain a few security definitions that implement the specific
 scheme and can be attacked through a few set interfaces. In general, a security definition 
 sdf that implements the encryption scheme ens has the following interfaces:
 
-ensSdfAttack(size, attackFun):
+ensSdfAttack(attackFun):
 This interface will run the attacking program once and check for correctness.
 Often a security definition is attacked by distinguishing between left and right 
 or real and random, so calling this interface will select one implementation at 
@@ -14,7 +14,7 @@ random, for example left or real, and see if your attacking program can correctl
 distinguish between them. It will then return a true or a false to indicate 
 if the attacking program succeeded.
 
-ensSdfAdvantage(size, trials, attackFun):
+ensSdfAdvantage(trials, attackFun):
 This interface will basically call sdfAttack() trials times to compute an 
 advantage which will be returned as a decimal value. Sometimes an attacking 
 program has a significant advantage but occaisonally fails, so running many 
@@ -27,7 +27,7 @@ users can fine tune runtime and precision to their attacking program's needs.
 The way the parameters are passed are language specific, see the README in the 
 corresponding folders.
 
-The attacking function shall accept a size parameter and a security definition 
+The attacking function shall accept a security definition 
 object and return a value indicating the attack's guess. Again, see the README 
 for your particular language for specific syntax.  This object has members or 
 methods that are defined for that security defnition, for example one time 
@@ -36,15 +36,15 @@ will be given an object that has an EAVESDROP() method.  The following methods s
 be implemented for each security defnition:
 
 One Time Secrecy (Ots) and Chosen Plaintext Attack (Cpa):
-EAVESDROP(size, mL, mR):
+EAVESDROP(mL, mR):
 This function will either encrypt mL or mR and return the ciphertext. 
 
-CTXT(size, m):
+CTXT(m):
 This function will either encrypt m and return the ciphertext or will return 
 random bits. 
 
 Secret Sharing Scheme (Sss):
-SHARE(size, mL, mR, U):
+SHARE(mL, mR, U):
 This function will store how ever many shares specified by the scheme into U.
 It is up to the caller to make sure there is enough room in U when attacking 
 the given scheme. While it could be possible to attack Sss with an overflow 
@@ -52,13 +52,11 @@ on U, this would be an attack on the implementation and not the scheme which
 we advise against, not to mention it's likely a more difficult attack.
 
 PsudeoRandom number Generators (Prg):
-QUERY(size):
+QUERY():
 This function returns a psudeorandom number based on the implementation. 
-Note that the size indicates input size, a length tripling PRG will return 
-a psudeorandom number that is size*3 bytes long.
 
 PsudeoRandom Function (Prf):
-LOOKUP(size, x):
+LOOKUP(x):
 This function returns a psudeorandom number generated from the function 
 specified by the scheme. 
 Developer's Note: Prf's require a running lookup table and key. The table 
@@ -68,22 +66,22 @@ the table and key in scope so that an attacking program can call LOOKUP()
 many times. 
 
 PsudeoRandom Permutation (Prp):
-LOOKUP(size, x):
+LOOKUP(x):
 This function returns a psudeorandom number generated from the permutation 
 function specified by the scheme and is invertable by INVERSE(). For 
-example, INVERSE(size, LOOKUP(size, x)) == x. 
+example, INVERSE(LOOKUP(x)) == x. 
 
-INVERSE(size, y):
+INVERSE(y):
 This function returns a psudeorandom number generated from the permutation 
 function specified by the scheme and is invertable by LOOKUP(). For 
-example, LOOKUP(size, INVERSE(size, y)) == y. 
+example, LOOKUP(INVERSE(y)) == y. 
 Developer's Note: Prp's require a running lookup table and key just like a Prf. 
 
 Chosen Ciphertext Attack (Cca):
-EAVESDROP(size, mL, mR):
+EAVESDROP(mL, mR):
 This function will either encrypt mL or mR and return the ciphertext. 
 
-DECRYPT(size, c):
+DECRYPT(c):
 This function will decrypt c and return the plaintext m. 
 Developer's Note: Similar to Prf's and Prp's, Cca's need to keep a running 
 lookup table and key. 

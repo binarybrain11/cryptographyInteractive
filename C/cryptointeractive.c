@@ -8,18 +8,22 @@
 #include <unistd.h>
 #include "cryptointeractive.h"
 
+#ifndef lambda
+#define lambda 4
+#endif
+
 /* Global variables to persist between library calls. */
 char* KEY = NULL;
 
-char* randomBytes(ssize_t lambda){
+char* randomBytes(ssize_t numBytes){
     int random = open("/dev/urandom", O_RDONLY);
     if (random < 0){
         /* Error opening file */
         perror("Couldn't open /dev/urandom");
         exit(1);
     } else {
-        char *k = malloc(sizeof(char)*lambda);
-        ssize_t res = read(random, k, lambda);
+        char *k = malloc(sizeof(char)*numBytes);
+        ssize_t res = read(random, k, numBytes);
         if (res < 0){
             /* Error reading file */
             perror("Couldn't read /dev/urandom");
@@ -34,23 +38,23 @@ char* randomBytes(ssize_t lambda){
     }
 }
 
-char* zeroBytes(ssize_t lambda){
-    char* bytes = malloc(sizeof(char)*lambda);
-    for (ssize_t i=0; i<lambda; i++){
+char* zeroBytes(ssize_t numBytes){
+    char* bytes = malloc(sizeof(char)*numBytes);
+    for (ssize_t i=0; i<numBytes; i++){
         bytes[i] = 0;
     }
     return bytes;
 }
 
-char* oneBytes(ssize_t lambda){
-    char* bytes = malloc(sizeof(char)*lambda);
+char* oneBytes(ssize_t numBytes){
+    char* bytes = malloc(sizeof(char)*numBytes);
     for (ssize_t i=0; i<lambda; i++){
         bytes[i] = 0xFF;
     }
     return bytes;
 }
 
-char* xorBytes(ssize_t lambda, char* a, char* b){
+char* xorBytes(char* a, char* b){
     char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] ^ b[i];
@@ -58,7 +62,7 @@ char* xorBytes(ssize_t lambda, char* a, char* b){
     return res;
 }
 
-char* andBytes(ssize_t lambda, char* a, char* b){
+char* andBytes(char* a, char* b){
     char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] & b[i];
@@ -66,7 +70,7 @@ char* andBytes(ssize_t lambda, char* a, char* b){
     return res;
 }
 
-char* orBytes(ssize_t lambda, char* a, char* b){
+char* orBytes(char* a, char* b){
     char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] | b[i];
@@ -74,7 +78,8 @@ char* orBytes(ssize_t lambda, char* a, char* b){
     return res;
 }
 
-int isEqual(ssize_t lambda, char* a, char* b){
+int isEqual(char* a, char* b){
+    if (a==NULL || b==NULL) { return 1; }
     char res = 0;
     for (ssize_t i=0; i<lambda; i++){
         /* Any differing bits will be stored in res */
@@ -83,16 +88,87 @@ int isEqual(ssize_t lambda, char* a, char* b){
     return res == 0;
 }
 
-char* KeyGen(ssize_t lambda){
+char* addBytes(char* a, char* b){
+    char* c = malloc(sizeof(char)*lambda);
+    char carry = 0;
+    int tmp = 0;
+    for (ssize_t i=0; i<lambda; i++){
+        tmp = a[i] + b[i] + carry;
+        c[i] = (char)tmp;
+        carry = (char)(tmp >> (sizeof(char)*8));
+    }
+    return c;
+}
+
+char* subtractBytes(char* a, char* b){
+    char* c = malloc(sizeof(char)*lambda);
+    char carry = 0;
+    /* tmp needs to be at least 1 byte bigger than a block (char) to catch carry bit */
+    int tmp = 0;
+    for (ssize_t i=0; i<lambda; i++){
+        tmp = a[i] - b[i] + carry;
+        c[i] = (char)tmp;
+        carry = (char)(tmp >> (sizeof(char)*8));
+    }
+    return c;
+}
+
+char* multiplyBytes(char* a, char* b){
+    char* c = zeroBytes(2*lambda);
+    char carry = 0;
+    /* tmp needs to be at least twice as big as a block (char)*/
+    int tmp = 0;
+    for (ssize_t i=0; i<lambda; i++){
+        carry = 0;
+        for (ssize_t j=0; j<lambda; j++){
+            tmp = a[i]*b[j] + c[i+j] + carry;
+            c[i+j] = (char)tmp;
+            carry = (char)(tmp >> (sizeof(char)*8));
+        }
+        c[i+lambda] = carry;
+    }
+    return c;
+}
+
+/*
+int main(){
+    char a[] = {1,2,3,4};
+    char b[] = {4,3,2,1};
+    char* diff = multiplyBytes(b,a);
+    printf("%lx\n", *(long*)diff);
+    free(diff);
+}
+*/
+
+/* ==================================================================
+ * Primitives
+ * ==================================================================
+ */
+
+char* KeyGen(){
     return randomBytes(lambda);
 }
 
-char* otpEnc(ssize_t lambda, char* k, char* m){
+char* otpEnc(char* k, char* m){
     char* c = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         c[i] = m[i] ^ k[i];
     }
     return c;
+}
+
+char* linearGseed = NULL;
+/* For size s bytes, m = mersennePrimes[s] is a sufficiently large prime 
+ * modulus to return s psuedorandom bytes. mersennePrimes[16] is sufficiently 
+ * large for 65 bytes. 
+ */
+const ssize_t mersennePrimes[] = {13, 17, 31, 61, 61, 61, 61, 89, 
+89, 89, 89, 107, 107, 127, 127, 521};
+
+char* linearG(char* seed){
+    const char* a;
+    const char* b;
+    const char* m;
 }
 
 /* ==================================================================
@@ -103,7 +179,7 @@ char* otpEnc(ssize_t lambda, char* k, char* m){
 /* 
  * One time secrecy (ots) example from Chapter 2 Section 3 of the book 
  */
-char* se2_3Enc(ssize_t lambda, char* k, char* m){
+char* se2_3Enc(char* k, char* m){
     if (k==NULL || m == NULL){
         perror("Null pointer passed to se2_Enc");
         exit(1);
@@ -115,32 +191,32 @@ char* se2_3Enc(ssize_t lambda, char* k, char* m){
     return c;
 }
 
-char* se2_3EAVESDROPL(ssize_t lambda, char* mL, char* mR){
+char* se2_3EAVESDROPL(char* mL, char* mR){
     char* key = KeyGen(lambda);
-    char* c = se2_3Enc(lambda, key, mL);
+    char* c = se2_3Enc(key, mL);
     free(key);
     return c;
 }
 
-char* se2_3EAVESDROPR(ssize_t lambda, char* mL, char* mR){
+char* se2_3EAVESDROPR(char* mL, char* mR){
     char* key = KeyGen(lambda);
-    char* c = se2_3Enc(lambda, key, mR);
+    char* c = se2_3Enc(key, mR);
     free(key);
     return c;
 }
 
-char* se2_3CTXTreal(ssize_t lambda, char* m){
+char* se2_3CTXTreal(char* m){
     char* key = KeyGen(lambda);
-    char* c = se2_3Enc(lambda, key, m);
+    char* c = se2_3Enc(key, m);
     free(key);
     return c;
 }
 
-char* se2_3CTXTrandom(ssize_t lambda, char* m){
+char* se2_3CTXTrandom(char* m){
     return randomBytes(lambda);
 }
 
-int se2_3OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+int se2_3OtsAttack(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* choice = randomBytes(1);
     if (*choice & 1){
@@ -153,7 +229,7 @@ int se2_3OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     } else {
         scheme.CTXT = se2_3CTXTreal;
     }
-    char result = attack(lambda, &scheme);
+    char result = attack(&scheme);
     if ((*choice & 1) == 1 && result == 'L'){
         free(choice);
         return 1;
@@ -177,52 +253,52 @@ int se2_3OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double se2_3OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double se2_3OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += se2_3OtsAttack(lambda, attack);
+        advantage += se2_3OtsAttack(attack);
     }
     return advantage/(double) trials;
 }
 
 /* Chapter 2 Homework Problem 1 */
 
-char* hw2_1KeyGen(ssize_t lambda){
+char* hw2_1KeyGen(){
     char* c = randomBytes(lambda);
     char* zero = zeroBytes(lambda);
-    while (isEqual(lambda, c, zero)){
+    while (isEqual(c, zero)){
         c = randomBytes(lambda);
     }
     free(zero);
     return c;
 }
 
-char* hw2_1EAVESDROPL(ssize_t lambda, char* mL, char* mR){
+char* hw2_1EAVESDROPL(char* mL, char* mR){
     char* key = hw2_1KeyGen(lambda);
-    char* c = otpEnc(lambda, key, mL);
+    char* c = otpEnc(key, mL);
     free(key);
     return c;
 }
 
-char* hw2_1EAVESDROPR(ssize_t lambda, char* mL, char* mR){
+char* hw2_1EAVESDROPR(char* mL, char* mR){
     char* key = hw2_1KeyGen(lambda);
-    char* c = otpEnc(lambda, key, mR);
+    char* c = otpEnc(key, mR);
     free(key);
     return c;
 }
 
-char* hw2_1CTXTreal(ssize_t lambda, char* m){
+char* hw2_1CTXTreal(char* m){
     char* key = hw2_1KeyGen(lambda);
-    char* c = otpEnc(lambda, key, m);
+    char* c = otpEnc(key, m);
     free(key);
     return c;
 }
 
-char* hw2_1CTXTrandom(ssize_t lambda, char* m){
+char* hw2_1CTXTrandom(char* m){
     return randomBytes(lambda);
 }
 
-int hw2_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+int hw2_1OtsAttack(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* choice = randomBytes(1);
     if (*choice & 1){
@@ -235,7 +311,7 @@ int hw2_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     } else {
         scheme.CTXT = hw2_1CTXTreal;
     }
-    char result = attack(lambda, &scheme);
+    char result = attack(&scheme);
     if ((*choice & 1) == 1 && result == 'L'){
         free(choice);
         return 1;
@@ -259,10 +335,10 @@ int hw2_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double hw2_1OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double hw2_1OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += hw2_1OtsAttack(lambda, attack);
+        advantage += hw2_1OtsAttack(attack);
     }
     return advantage/(double) trials;
 }
@@ -279,7 +355,7 @@ double hw2_1OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssi
  * sizeof(int) so input seeds larger than that will be truncated.
  */
 /* Length tripling PRG */
-char* hw5_1G(ssize_t lambda, char* s){
+char* hw5_1G(char* s){
     char* num = malloc(3*lambda*sizeof(char));
     /* Safely converts s to an integer to pass as seed to srand() */
     int seed = 0;
@@ -295,11 +371,11 @@ char* hw5_1G(ssize_t lambda, char* s){
     return num;
 }
 
-char* hw5_1aPRGreal(ssize_t lambda){
+char* hw5_1aPRGreal(){
     char* s = randomBytes(lambda);
-    char* x = hw5_1G(lambda, s);
+    char* x = hw5_1G(s);
     char* zero = zeroBytes(lambda);
-    char* y = hw5_1G(lambda, zero);
+    char* y = hw5_1G(zero);
     /* We return x||y where x and y are each 3*lambda bytes long */
     char* res = malloc(6*lambda*sizeof(char));
     for (int i=0; i<3*lambda; i++){
@@ -315,11 +391,11 @@ char* hw5_1aPRGreal(ssize_t lambda){
     return res;
 }
 
-char* hw5_1aPRGrand(ssize_t lambda){
+char* hw5_1aPRGrand(){
     return randomBytes(lambda);
 }
 
-int hw5_1aPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+int hw5_1aPrgAttack(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* choice = randomBytes(1);
     if (*choice & 2){
@@ -327,7 +403,7 @@ int hw5_1aPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     } else {
         scheme.QUERY = hw5_1aPRGreal;
     }
-    char result = attack(lambda, &scheme);
+    char result = attack(&scheme);
     if ((*choice & 2) == 2 && result == '$'){
         free(choice);
         return 1;
@@ -342,20 +418,20 @@ int hw5_1aPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double hw5_1aPrgAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double hw5_1aPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += hw5_1aPrgAttack(lambda, attack);
+        advantage += hw5_1aPrgAttack(attack);
     }
     return advantage/(double) trials;
 }
 
 /* Chapter 5 Homework Problem 1b */
-char* hw5_1bPRGreal(ssize_t lambda){
+char* hw5_1bPRGreal(){
     char* s = randomBytes(lambda);
-    char* x = hw5_1G(lambda, s);
+    char* x = hw5_1G(s);
     char* zero = zeroBytes(lambda);
-    char* y = hw5_1G(lambda, zero);
+    char* y = hw5_1G(zero);
     /* x = x^y then return the new x */
     for (int i=0; i<3*lambda; i++){
         x[i] ^= y[i];
@@ -366,11 +442,11 @@ char* hw5_1bPRGreal(ssize_t lambda){
     return x;
 }
 
-char* hw5_1bPRGrand(ssize_t lambda){
+char* hw5_1bPRGrand(){
     return randomBytes(lambda);
 }
 
-int hw5_1bPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+int hw5_1bPrgAttack(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* choice = randomBytes(1);
     if (*choice & 2){
@@ -378,7 +454,7 @@ int hw5_1bPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     } else {
         scheme.QUERY = hw5_1bPRGreal;
     }
-    char result = attack(lambda, &scheme);
+    char result = attack(&scheme);
     if ((*choice & 2) == 2 && result == '$'){
         free(choice);
         return 1;
@@ -393,23 +469,23 @@ int hw5_1bPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double hw5_1bPrgAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double hw5_1bPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += hw5_1bPrgAttack(lambda, attack);
+        advantage += hw5_1bPrgAttack(attack);
     }
     return advantage/(double) trials;
 }
 
 /* Chapter 5 Homework Problem 1c */
-char* hw5_1cPRGreal(ssize_t lambda){
+char* hw5_1cPRGreal(){
     char* s = randomBytes(lambda);
     /* xyz = x||y||z = G(s) */
-    char* xyz = hw5_1G(lambda, s);
+    char* xyz = hw5_1G(s);
     /* Even though xyz has 3*lambda length, the function will only read the
      * first lambda bytes, or x, for the seed
      */
-    char* w = hw5_1G(lambda, xyz);
+    char* w = hw5_1G(xyz);
     /* res = x||y||z||w */
     char* res = malloc(6*lambda*sizeof(char));
     for (int i=0; i<3*lambda; i++){
@@ -425,11 +501,11 @@ char* hw5_1cPRGreal(ssize_t lambda){
     return res;
 }
 
-char* hw5_1cPRGrand(ssize_t lambda){
+char* hw5_1cPRGrand(){
     return randomBytes(lambda);
 }
 
-int hw5_1cPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+int hw5_1cPrgAttack(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* choice = randomBytes(1);
     if (*choice & 2){
@@ -437,7 +513,7 @@ int hw5_1cPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     } else {
         scheme.QUERY = hw5_1cPRGreal;
     }
-    char result = attack(lambda, &scheme);
+    char result = attack(&scheme);
     if ((*choice & 2) == 2 && result == '$'){
         free(choice);
         return 1;
@@ -452,10 +528,10 @@ int hw5_1cPrgAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double hw5_1cPrgAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double hw5_1cPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += hw5_1cPrgAttack(lambda, attack);
+        advantage += hw5_1cPrgAttack(attack);
     }
     return advantage/(double) trials;
 }
@@ -465,36 +541,36 @@ double hw5_1cPrgAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ss
  * ==================================================================
  */
 /* Chapter 6 Homework Problem 1 */
-char* hw6_1Prf(ssize_t lambda, char* k, char* m){
+char* hw6_1Prf(char* k, char* m){
     
 }
 
-char* hw6_1EAVESDROPL(ssize_t lambda, char* mL, char* mR){
+char* hw6_1EAVESDROPL(char* mL, char* mR){
     char* key = hw2_1KeyGen(lambda);
-    char* c = otpEnc(lambda, key, mL);
+    char* c = otpEnc(key, mL);
     free(key);
     return c;
 }
 
-char* hw6_1EAVESDROPR(ssize_t lambda, char* mL, char* mR){
+char* hw6_1EAVESDROPR(char* mL, char* mR){
     char* key = hw2_1KeyGen(lambda);
-    char* c = otpEnc(lambda, key, mR);
+    char* c = otpEnc(key, mR);
     free(key);
     return c;
 }
 
-char* hw6_1CTXTreal(ssize_t lambda, char* m){
+char* hw6_1CTXTreal(char* m){
     char* key = hw2_1KeyGen(lambda);
-    char* c = otpEnc(lambda, key, m);
+    char* c = otpEnc(key, m);
     free(key);
     return c;
 }
 
-char* hw6_1CTXTrandom(ssize_t lambda, char* m){
+char* hw6_1CTXTrandom(char* m){
     return randomBytes(lambda);
 }
 
-int hw6_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
+int hw6_1OtsAttack(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* choice = randomBytes(1);
     if (*choice & 1){
@@ -507,7 +583,7 @@ int hw6_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     } else {
         scheme.CTXT = hw2_1CTXTreal;
     }
-    char result = attack(lambda, &scheme);
+    char result = attack(&scheme);
     if ((*choice & 1) == 1 && result == 'L'){
         free(choice);
         return 1;
@@ -531,10 +607,10 @@ int hw6_1OtsAttack(ssize_t lambda, char (*attack)(ssize_t, Scheme*)){
     return 0;
 }
 
-double hw6_1OtsAdvantage(ssize_t lambda, unsigned int trials, char (*attack)(ssize_t, Scheme*)){
+double hw6_1OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += hw6_1OtsAttack(lambda, attack);
+        advantage += hw6_1OtsAttack(attack);
     }
     return advantage/(double) trials;
 }
