@@ -6,10 +6,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include "cryptointeractive.h"
 
+#ifndef BYTE
+#define BYTE 8
+#endif
+
 #ifndef lambda
-#define lambda 4
+#define lambda 2
 #endif
 
 /* Global variables to persist between library calls. */
@@ -88,14 +93,19 @@ int isEqual(char* a, char* b){
     return res == 0;
 }
 
+/* These next few arithmetic functions are from 
+ * A Computational Introduction to Number Theory and Algebra
+ * by Victor Shoup
+ */
+
 char* addBytes(char* a, char* b){
     char* c = malloc(sizeof(char)*lambda);
-    char carry = 0;
+    unsigned char carry = 0;
     int tmp = 0;
     for (ssize_t i=0; i<lambda; i++){
         tmp = a[i] + b[i] + carry;
         c[i] = (char)tmp;
-        carry = (char)(tmp >> (sizeof(char)*8));
+        carry = (char)(tmp >> (sizeof(char)*BYTE));
     }
     return c;
 }
@@ -108,12 +118,15 @@ char* subtractBytes(char* a, char* b){
     for (ssize_t i=0; i<lambda; i++){
         tmp = a[i] - b[i] + carry;
         c[i] = (char)tmp;
-        carry = (char)(tmp >> (sizeof(char)*8));
+        carry = (char)(tmp >> (sizeof(char)*BYTE));
     }
     return c;
 }
 
-char* multiplyBytes(char* a, char* b){
+/* Notably returns string of length 2*lambda 
+ * Also note the unsigned integers 
+ */
+char* multiplyBytes(unsigned char* a, unsigned char* b){
     char* c = zeroBytes(2*lambda);
     char carry = 0;
     /* tmp needs to be at least twice as big as a block (char)*/
@@ -123,19 +136,74 @@ char* multiplyBytes(char* a, char* b){
         for (ssize_t j=0; j<lambda; j++){
             tmp = a[i]*b[j] + c[i+j] + carry;
             c[i+j] = (char)tmp;
-            carry = (char)(tmp >> (sizeof(char)*8));
+            carry = (char)(tmp >> (sizeof(char)*BYTE));
         }
         c[i+lambda] = carry;
     }
     return c;
 }
 
+/* Integer Division with Remainder. First lambda bytes are the quotient, 
+ * second lambda bytes are the remainder. An extra byte is allocated for 
+ * calculations, so total return size is 2*lambda + 1
+ * Also note the unsigned integers 
+ */
+/* TODO refactor this for B 7 bits, allowing r to be signed */
+char* divideBytes(unsigned char* a, unsigned char* b){
+    /* Location of the MSB in b */
+    ssize_t l = lambda-1;
+    while (b[l]==0 && lambda>=0){
+        l--;
+    }
+    /* Check for divide by zero */
+    if (l<0){
+        return NULL;
+    }
+    /* Fixes l to be what Shoup expects */
+    l++; 
+    char* q = zeroBytes(2*lambda+1);
+    char* r = q + lambda + 1;
+    /* Points at the same data as r but treats it as unsigned */
+    unsigned char* ur = r;
+    unsigned char maxBlock = -1;
+    memcpy(r, a, lambda);
+    r[lambda] = 0;
+    /* tmp needs to be twice as big as a block (char in this case) */
+    int tmp = 0;
+    char carry = 0;
+    for (ssize_t i=lambda-l; i>=0; i--){
+        tmp = (ur[i+l] << BYTE) + ur[i+l-1];
+        tmp = tmp/(b[l-1]);
+        q[i] = tmp > maxBlock ? maxBlock : tmp;
+        carry = 0;
+        for (ssize_t j=0; j<l; j++){
+            tmp = r[i+j] - q[i]*b[j] + carry;
+            carry = tmp >> BYTE;
+            r[i+j] = (char)tmp;
+        }
+        r[i+l] = r[i+l] + carry;
+        
+        while (r[i+l] < 0){
+            carry = 0;
+            for (ssize_t j=0; j<l; j++){
+                tmp = r[i+j] + b[i] + carry;
+                carry = tmp >> BYTE;
+                r[i+j] = (char)tmp;
+            }
+            r[i+l] = r[i+l] + carry;
+            q[i] = q[i] - 1;
+        }
+        
+    }
+    return q;
+}
+
 /*
 int main(){
-    char a[] = {1,2,3,4};
-    char b[] = {4,3,2,1};
-    char* diff = multiplyBytes(b,a);
-    printf("%lx\n", *(long*)diff);
+    char a[] = {128,0};
+    char b[] = {3,0};
+    char* diff = divideBytes(a,b);
+    printf("%x %x\n", *(int*)diff, *(int*)(diff+4));
     free(diff);
 }
 */
@@ -158,8 +226,8 @@ char* otpEnc(char* k, char* m){
 }
 
 char* linearGseed = NULL;
-/* For size s bytes, m = mersennePrimes[s] is a sufficiently large prime 
- * modulus to return s psuedorandom bytes. mersennePrimes[16] is sufficiently 
+/* For size s bytes, m = 2^mersennePrimes[s]-1 is a sufficiently large prime 
+ * modulus to return s psuedorandom bytes. 2^mersennePrimes[16]-1 is sufficiently 
  * large for 65 bytes. 
  */
 const ssize_t mersennePrimes[] = {13, 17, 31, 61, 61, 61, 61, 89, 
@@ -361,7 +429,7 @@ char* hw5_1G(char* s){
     int seed = 0;
     for (int i=0; i<lambda && i < sizeof(int); i++){
         seed += s[i];
-        seed << 8*sizeof(char);
+        seed << BYTE*sizeof(char);
     }
 
     srand(seed);
