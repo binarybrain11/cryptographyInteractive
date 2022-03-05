@@ -19,7 +19,7 @@
 
 /* Global variables to persist between library calls. */
 char* KEY = NULL;
-void* T = NULL;
+void** T = NULL;
 
 void randomBytes(char* res, ssize_t numBytes){
     int random = open("/dev/urandom", O_RDONLY);
@@ -55,21 +55,18 @@ void oneBytes(char* bytes, ssize_t numBytes){
 }
 
 void xorBytes(char* res, char* a, char* b){
-    char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] ^ b[i];
     }
 }
 
 void andBytes(char* res, char* a, char* b){
-    char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] & b[i];
     }
 }
 
 void orBytes(char* res, char* a, char* b){
-    char* res = malloc(sizeof(char)*lambda);
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] | b[i];
     }
@@ -216,16 +213,66 @@ void multiplyDoubleBytes(unsigned char* res, unsigned char* a, unsigned char* b)
     }
 }
 
-char* TInit(){
-    T = malloc(1);
+void TInitRecurse(void** dT, unsigned int depth){
+    const unsigned int maxsize = ~0;
+    if (depth >= 1){
+        dT = malloc(sizeof(int*)*maxsize);
+        TInitRecurse(dT[0], depth-1);
+        for (unsigned int i=1; i!=0; i++){
+            TInitRecurse(dT[i], depth-1);
+        }
+    } else {
+        depth = lambda % sizeof(int);
+        dT = malloc(sizeof(char**)*depth);
+        for (int i=0; i<depth; i++){
+            dT[i] = NULL;
+        }
+    }
 }
 
-char* TFree(){
-
+void TInit(){
+    const unsigned int maxsize = ~0;
+    unsigned int depth = lambda/sizeof(int);
+    T = malloc(sizeof(int*) * maxsize);
+    TInitRecurse(T, depth);
 }
 
+void TFreeRecurse(void** dT, unsigned int depth){
+    if (depth >= 1){
+        TFreeRecurse(dT[0], depth-1);
+        for (unsigned int i=1; i!=0; i++){
+            TFreeRecurse(dT[i], depth-1);
+        }
+    } else {
+        depth = lambda % sizeof(int);
+        for (int i=0; i<depth; i++){
+            if (dT[i]){
+                free(dT[i]);
+            }
+        }
+    }
+    free(dT);
+}
+
+void TFree(){
+    unsigned int depth = lambda/sizeof(int);
+    TInitRecurse(T, depth);
+    T = NULL;
+}
+
+/* TODO double check this works */
 char* TLookup(char* x){
     void** Tcast = T;
+    for (int i=0; i<(lambda-sizeof(int)); i+=sizeof(int)){
+        unsigned int index = *(unsigned int*)(x + lambda*i);
+        Tcast = Tcast[index];
+    }
+    for (int i=0; i<(lambda-sizeof(char)); i+=sizeof(char)){
+        char index = *(char*)(x + lambda*i);
+        Tcast = Tcast[index];
+    }
+    char* Tchar = (char*)Tcast;
+    return Tchar;
 }
 
 /* ==================================================================
@@ -271,7 +318,7 @@ void linearG(char* res, char* seed){
     char* c = calloc(2*lambda, sizeof(char));
     c[0] = 4;
     /* set a = 2^lambda - 4 */
-    subtractBytesR(a,a,c);
+    subtractBytes(a,a,c);
     c[0] = 3;
     multiplyBytes(linearGx, linearGx, a);
     addBytes(linearGx, linearGx, c);
@@ -298,7 +345,7 @@ void linearDoubleG(char* res, char* seed){
     char* c = calloc(2*lambda, sizeof(char));
     c[0] = 4;
     /* set a = 2^lambda - 4 */
-    subtractDoubleBytesR(a,a,c);
+    subtractDoubleBytes(a,a,c);
     c[0] = 3;
     multiplyDoubleBytes(linearGx, linearGx, a);
     addDoubleBytes(linearGx, linearGx, c);
@@ -387,21 +434,17 @@ int se2_3OtsAttack(char (*attack)(Scheme*)){
     }
     char result = attack(&scheme);
     if ((choice & 1) == 1 && result == 'L'){
-        free(choice);
         return 1;
     } 
     if ((choice & 1) == 0 && result == 'R'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 2 && result == '$'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 0 && result == 'r'){
-        free(choice);
         return 1;
     } 
     
@@ -421,7 +464,7 @@ double se2_3OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
 char* hw2_1KeyGen(){
     char* c = malloc(sizeof(char)*lambda);
     randomBytes(c, lambda);
-    const char zero[lambda] = {0};
+    char zero[lambda] = {0};
     while (isEqual(c, zero)){
         randomBytes(c, lambda);
     }
@@ -471,21 +514,17 @@ int hw2_1OtsAttack(char (*attack)(Scheme*)){
     }
     char result = attack(&scheme);
     if ((choice & 1) == 1 && result == 'L'){
-        free(choice);
         return 1;
     } 
     if ((choice & 1) == 0 && result == 'R'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 2 && result == '$'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 0 && result == 'r'){
-        free(choice);
         return 1;
     } 
     
@@ -524,7 +563,7 @@ char* hw5_1aPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
     randomBytes(s, lambda);
     char* x = hw5_1G(s);
-    const char zero[] = {0};
+    char zero[] = {0};
     char* y = hw5_1G(zero);
     /* We return x||y where x and y are each 3*lambda bytes long */
     char* res = malloc(6*lambda*sizeof(char));
@@ -557,16 +596,13 @@ int hw5_1aPrgAttack(char (*attack)(Scheme*)){
     }
     char result = attack(&scheme);
     if ((choice & 2) == 2 && result == '$'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 0 && result == 'r'){
-        free(choice);
         return 1;
     } 
     
-    free(choice);
     return 0;
 }
 
@@ -583,7 +619,7 @@ char* hw5_1bPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
     randomBytes(s, lambda);
     char* x = hw5_1G(s);
-    const char zero[lambda] = {0};
+    char zero[lambda] = {0};
     char* y = hw5_1G(zero);
     /* x = x xor y then return the new x */
     xorBytes(x,x,y);
@@ -609,16 +645,13 @@ int hw5_1bPrgAttack(char (*attack)(Scheme*)){
     }
     char result = attack(&scheme);
     if ((choice & 2) == 2 && result == '$'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 0 && result == 'r'){
-        free(choice);
         return 1;
     } 
     
-    free(choice);
     return 0;
 }
 
@@ -672,16 +705,13 @@ int hw5_1cPrgAttack(char (*attack)(Scheme*)){
     }
     char result = attack(&scheme);
     if ((choice & 2) == 2 && result == '$'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 2) == 0 && result == 'r'){
-        free(choice);
         return 1;
     } 
     
-    free(choice);
     return 0;
 }
 
@@ -729,12 +759,10 @@ int hw6_1PrfAttack(char (*attack)(Scheme*)){
     T = malloc(sizeof(char*)*lambda);
     char result = attack(&scheme);
     if ((choice & 1) == 1 && result == '$'){
-        free(choice);
         return 1;
     } 
 
     if ((choice & 1) == 0 && result == 'r'){
-        free(choice);
         return 1;
     } 
     
