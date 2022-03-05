@@ -545,12 +545,11 @@ double hw2_1OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
  */
 
 /* Chapter 5 Homework Problem 1 a */
-/* This is a *secure* length tripling PRG. stdlib rand() isn't cryptographically
- * secure, however it can be seeded and we assume users won't attack rand() but
- * rather the scheme described in the problem. The seed to srand() is limited to 
- * sizeof(int) so input seeds larger than that will be truncated.
+/* This is a *secure* length tripling PRG. The security is dependent on 
+ * the linear congruential generator linearG. While linearG clearly isn't 
+ * secure, attacking the implementation of G should be more difficult than
+ * attacking the intended library. 
  */
-/* Length tripling PRG, security dependent on linearG */
 char* hw5_1G(char* s){
     char* num = malloc(3*lambda*sizeof(char));
     for (ssize_t i=0; i<3; i++){

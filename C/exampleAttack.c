@@ -8,7 +8,8 @@
 #include "cryptointeractive.h"
 
 char se2_3OtsExampleAttack(Scheme *scheme){
-    char* m = zeroBytes(lambda);
+    char* m = malloc(sizeof(char)*lambda);
+    zeroBytes(m, lambda);
     char* c = scheme->CTXT(m);
     if (isEqual(m, c)){
         free(m);
