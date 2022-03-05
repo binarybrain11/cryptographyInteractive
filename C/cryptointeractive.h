@@ -26,6 +26,11 @@ void xorBytes(char* res, char* a, char* b);
 void andBytes(char* res, char* a, char* b);
 void orBytes(char* res, char* a, char* b);
 int isEqual(char* a, char* b);
+int isZero(char* a);
+
+/* Some Primitives */
+void linearDoubleG(char* res, char* seed);
+char* linearPrf(char* k, char* x);
 
 /* Chapter 2 section 3 example */
 /* Implements CTXT() and EAVESDROP() */
@@ -55,3 +60,7 @@ double hw5_1bPrgAdvantage(unsigned int trials, char (*attack)(Scheme*));
 /* Implements QUERY() */
 int hw5_1cPrgAttack(char (*attack)(Scheme*));
 double hw5_1cPrgAdvantage(unsigned int trials, char (*attack)(Scheme*));
+/* Chapter 6 Homework Problem 1 */
+/* Implements LOOKUP() */
+double hw6_1PrfAdvantage(unsigned int trials, char (*attack)(Scheme*));
+int hw6_1PrfAttack(char (*attack)(Scheme*));

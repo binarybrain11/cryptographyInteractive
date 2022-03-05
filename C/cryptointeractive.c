@@ -19,7 +19,100 @@
 
 /* Global variables to persist between library calls. */
 char* KEY = NULL;
-void** T = NULL;
+char* linearGseed = NULL;
+char* linearGx = NULL;
+char** T = NULL;
+ssize_t Tsize = 0;
+ssize_t Tcapacity = 0;
+ssize_t TkeySize = 0;
+ssize_t TvalSize = 0;
+
+void TInit(ssize_t keySize, ssize_t valSize){
+    Tcapacity = 100;
+    T = malloc(sizeof(char*) * Tcapacity);
+    TkeySize = keySize;
+    TvalSize = valSize;
+}
+
+/* Free will free all of the strings held by the table too */
+void TFree(){
+    for (ssize_t i=0; i<Tsize; i++){
+        free(T[i]);
+    }
+    free(T);
+    T = NULL;
+    Tsize = 0;
+    Tcapacity = 0;
+    TkeySize = 0;
+    TvalSize = 0;
+}
+
+/* Returns a copy of the value pointed to by key (so the table value stays intact) */
+char* TLookup(char* key){
+    /* Looks for corresponding key, returns value */
+    int equals = 1;
+    for(ssize_t i=0; i<Tsize; i+=2){
+        for (ssize_t j=0; j<(TkeySize/lambda); j++){
+            equals &= isEqual(key + lambda*j, T[i] + lambda*j);
+        }
+        if (!equals){
+            char* res = malloc(sizeof(char)*TvalSize);
+            memcpy(res, T[i+1], sizeof(char)*TvalSize);
+            return res;
+        }
+    }
+    return NULL;
+}
+
+/* Adds key-value pair to T. If key exists, it will overwrite the existing value */
+void Tadd(char* key, char* value){
+    char* valcpy = malloc(sizeof(char)*TvalSize);
+    memcpy(valcpy, value, sizeof(char)*TvalSize);
+    for (ssize_t i=0; i<Tsize; i+=2){
+        if (isEqual(key, T[i])){
+            free(T[i+1]);
+            T[i+1] = valcpy;
+            return;
+        }
+    }
+    char* keycpy = malloc(sizeof(char)*TkeySize);
+    memcpy(keycpy, key, sizeof(char)*TkeySize);
+    if (Tsize + 2 > Tcapacity){
+        char** tmp =  malloc(sizeof(char*)*Tcapacity*2);
+        for (ssize_t i=0; i<Tsize; i++){
+            tmp[i] = T[i];
+        }
+        Tcapacity *= 2;
+        free(T);
+        T=tmp;
+    }
+    T[Tsize] = keycpy;
+    T[Tsize+1] = valcpy;
+    Tsize += 2;
+}
+
+void cleanGlobals(){
+    if (T){
+        TFree();
+    }
+    if (linearGseed){
+        free(linearGseed);
+        linearGseed = NULL;
+    }
+    if (linearGx){
+        free(linearGx);
+        linearGx = NULL;
+    }
+    if (KEY){
+        free(KEY);
+        KEY = NULL;
+    }
+}
+
+/* ==================================================================
+ * Helpers
+ * ==================================================================
+ */
 
 void randomBytes(char* res, ssize_t numBytes){
     int random = open("/dev/urandom", O_RDONLY);
@@ -94,17 +187,17 @@ int isZero(char* a){
 }
 
 void leftShiftBytes(unsigned char* res, unsigned char* a, int b){
-    memcpy(res, a, lambda);
+    memcpy(res, a, lambda*sizeof(char));
     /* shift one byte at a time */
-    while (b > BYTE){
+    while (b > (BYTE*sizeof(char))){
         for (ssize_t i=lambda-1; i>0; i--){
             res[i] = res[i-1];
         }
-        b-=BYTE;
+        b-=BYTE*sizeof(char);
     }
     unsigned char carry;
     for (ssize_t i=lambda-1; i>0; i--){
-        carry = res[i-1] >> (BYTE - b);
+        carry = res[i-1] >> (BYTE*sizeof(char) - b);
         res[i] = res[i] << b;
         res[i] |= carry;
     }
@@ -112,17 +205,17 @@ void leftShiftBytes(unsigned char* res, unsigned char* a, int b){
 }
 
 void rightShiftBytes(unsigned char* res, unsigned char* a, int b){
-    memcpy(res, a, lambda);
+    memcpy(res, a, lambda*sizeof(char));
     /* shift one byte at a time */
-    while (b > BYTE){
+    while (b > (BYTE*sizeof(char))){
         for (ssize_t i=1; i<lambda; i++){
             res[i-1] = res[i];
         }
-        b-=BYTE;
+        b-=BYTE*sizeof(char);
     }
     unsigned char carry;
     for (ssize_t i=1; i<lambda; i++){
-        carry = res[i] << (BYTE - b);
+        carry = res[i] << (BYTE*sizeof(char) - b);
         res[i-1] = res[i-1] >> b;
         res[i-1] |= carry;
     }
@@ -213,76 +306,14 @@ void multiplyDoubleBytes(unsigned char* res, unsigned char* a, unsigned char* b)
     }
 }
 
-void TInitRecurse(void** dT, unsigned int depth){
-    const unsigned int maxsize = ~0;
-    if (depth >= 1){
-        dT = malloc(sizeof(int*)*maxsize);
-        TInitRecurse(dT[0], depth-1);
-        for (unsigned int i=1; i!=0; i++){
-            TInitRecurse(dT[i], depth-1);
-        }
-    } else {
-        depth = lambda % sizeof(int);
-        dT = malloc(sizeof(char**)*depth);
-        for (int i=0; i<depth; i++){
-            dT[i] = NULL;
-        }
-    }
-}
-
-void TInit(){
-    const unsigned int maxsize = ~0;
-    unsigned int depth = lambda/sizeof(int);
-    T = malloc(sizeof(int*) * maxsize);
-    TInitRecurse(T, depth);
-}
-
-void TFreeRecurse(void** dT, unsigned int depth){
-    if (depth >= 1){
-        TFreeRecurse(dT[0], depth-1);
-        for (unsigned int i=1; i!=0; i++){
-            TFreeRecurse(dT[i], depth-1);
-        }
-    } else {
-        depth = lambda % sizeof(int);
-        for (int i=0; i<depth; i++){
-            if (dT[i]){
-                free(dT[i]);
-            }
-        }
-    }
-    free(dT);
-}
-
-void TFree(){
-    unsigned int depth = lambda/sizeof(int);
-    TInitRecurse(T, depth);
-    T = NULL;
-}
-
-/* TODO double check this works */
-char* TLookup(char* x){
-    void** Tcast = T;
-    for (int i=0; i<(lambda-sizeof(int)); i+=sizeof(int)){
-        unsigned int index = *(unsigned int*)(x + lambda*i);
-        Tcast = Tcast[index];
-    }
-    for (int i=0; i<(lambda-sizeof(char)); i+=sizeof(char)){
-        char index = *(char*)(x + lambda*i);
-        Tcast = Tcast[index];
-    }
-    char* Tchar = (char*)Tcast;
-    return Tchar;
-}
-
 /* ==================================================================
  * Primitives
  * ==================================================================
  */
 
-char* KeyGen(){
-    char* key = malloc(sizeof(char)*lambda);
-    randomBytes(key, lambda);
+char* KeyGen(ssize_t size){
+    char* key = malloc(size*sizeof(char));
+    randomBytes(key, size*sizeof(char));
     return key;
 }
 
@@ -293,9 +324,6 @@ char* otpEnc(char* k, char* m){
     }
     return c;
 }
-
-char* linearGseed = NULL;
-char* linearGx = NULL;
 
 /* This is a linear congruential generator. This is only used in the 
  * libraries where the user passes a seed that they create. This is a bad 
@@ -308,11 +336,11 @@ void linearG(char* res, char* seed){
             free(linearGseed);
         }
         linearGseed = malloc(sizeof(char)*lambda);
-        memcpy(linearGseed, seed, lambda);
+        memcpy(linearGseed, seed, sizeof(char)*lambda);
         if (!linearGx){
             linearGx = malloc(sizeof(char)*lambda*2);
         }
-        memcpy(linearGx, seed, lambda);
+        memcpy(linearGx, seed, sizeof(char)*lambda);
     }
     char* a = calloc(2*lambda, sizeof(char));
     char* c = calloc(2*lambda, sizeof(char));
@@ -323,7 +351,7 @@ void linearG(char* res, char* seed){
     multiplyBytes(linearGx, linearGx, a);
     addBytes(linearGx, linearGx, c);
     /* only return upper bits since lower bits are somewhat predictable */
-    memcpy(res, linearGx+lambda, lambda);
+    memcpy(res, linearGx+lambda, sizeof(char)*lambda);
     free(a);
     free(c);
 }
@@ -334,12 +362,12 @@ void linearDoubleG(char* res, char* seed){
         if (linearGseed){
             free(linearGseed);
         }
-        linearGseed = malloc(sizeof(char)*lambda*2);
-        memcpy(linearGseed, seed, lambda);
+        linearGseed = calloc(lambda*2, sizeof(char));
+        memcpy(linearGseed, seed, sizeof(char)*lambda);
         if (!linearGx){
-            linearGx = malloc(sizeof(char)*lambda*4);
+            linearGx = calloc(lambda*4, sizeof(char));
         }
-        memcpy(linearGx, seed, lambda);
+        memcpy(linearGx, seed, sizeof(char)*lambda);
     }
     char* a = calloc(2*lambda, sizeof(char));
     char* c = calloc(2*lambda, sizeof(char));
@@ -350,7 +378,7 @@ void linearDoubleG(char* res, char* seed){
     multiplyDoubleBytes(linearGx, linearGx, a);
     addDoubleBytes(linearGx, linearGx, c);
     /* only return upper bits since lower bits are somewhat predictable */
-    memcpy(res, linearGx+lambda, 2*lambda);
+    memcpy(res, linearGx+lambda, sizeof(char)*2*lambda);
     free(a);
     free(c);
 }
@@ -358,14 +386,21 @@ void linearDoubleG(char* res, char* seed){
 /* PRF constructed using linearG to specification of Construction 6.4 */
 char* linearPrf(char* k, char* x){
     char* v = malloc(sizeof(char)*lambda*2);
-    memcpy(v, k, lambda);
-    for (ssize_t i=0; i<lambda/sizeof(char); i++){
-        for (ssize_t j=1; j<((unsigned char)~0); j*=2){
+    memcpy(v, k, sizeof(char)*lambda);
+    linearDoubleG(v, v);
+    for (ssize_t i=0; i<lambda; i++){
+        char j;
+        for (j=1; j>0; j*=2){
             if (x[i] & j){
-                linearG(v, v);
+                linearDoubleG(v, v);
             } else {
-                linearG(v, v+lambda);
+                linearDoubleG(v, v+(lambda*sizeof(char)));
             }
+        }
+        if (x[i] & j){
+            linearDoubleG(v, v);
+        } else {
+            linearDoubleG(v, v+(lambda*sizeof(char)));
         }
     }
     return v;
@@ -414,7 +449,7 @@ char* se2_3CTXTreal(char* m){
 
 char* se2_3CTXTrandom(char* m){
     char* c = malloc(sizeof(char)*lambda);
-    randomBytes(c,lambda);
+    randomBytes(c,lambda*sizeof(char));
     return c;
 }
 
@@ -463,30 +498,30 @@ double se2_3OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
 
 char* hw2_1KeyGen(){
     char* c = malloc(sizeof(char)*lambda);
-    randomBytes(c, lambda);
+    randomBytes(c, sizeof(char)*lambda);
     char zero[lambda] = {0};
     while (isEqual(c, zero)){
-        randomBytes(c, lambda);
+        randomBytes(c, sizeof(char)*lambda);
     }
     return c;
 }
 
 char* hw2_1EAVESDROPL(char* mL, char* mR){
-    char* key = hw2_1KeyGen(lambda);
+    char* key = hw2_1KeyGen();
     char* c = otpEnc(key, mL);
     free(key);
     return c;
 }
 
 char* hw2_1EAVESDROPR(char* mL, char* mR){
-    char* key = hw2_1KeyGen(lambda);
+    char* key = hw2_1KeyGen();
     char* c = otpEnc(key, mR);
     free(key);
     return c;
 }
 
 char* hw2_1CTXTreal(char* m){
-    char* key = hw2_1KeyGen(lambda);
+    char* key = hw2_1KeyGen();
     char* c = otpEnc(key, m);
     free(key);
     return c;
@@ -494,7 +529,7 @@ char* hw2_1CTXTreal(char* m){
 
 char* hw2_1CTXTrandom(char* m){
     char* c = malloc(sizeof(char)*lambda);
-    randomBytes(c,lambda);
+    randomBytes(c,sizeof(char)*lambda);
     return c;
 }
 
@@ -552,15 +587,15 @@ double hw2_1OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
  */
 char* hw5_1G(char* s){
     char* num = malloc(3*lambda*sizeof(char));
-    for (ssize_t i=0; i<3; i++){
-        linearG(num+(lambda*i), s);
-    }
+    linearDoubleG(num, s);
+    /* Using the upper bits as seed to next call, then replacing them */
+    linearDoubleG(num + lambda, num + lambda);
     return num;
 }
 
 char* hw5_1aPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
-    randomBytes(s, lambda);
+    randomBytes(s, sizeof(char)*lambda);
     char* x = hw5_1G(s);
     char zero[] = {0};
     char* y = hw5_1G(zero);
@@ -616,7 +651,7 @@ double hw5_1aPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
 /* Chapter 5 Homework Problem 1b */
 char* hw5_1bPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
-    randomBytes(s, lambda);
+    randomBytes(s, sizeof(char)*lambda);
     char* x = hw5_1G(s);
     char zero[lambda] = {0};
     char* y = hw5_1G(zero);
@@ -665,7 +700,7 @@ double hw5_1bPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
 /* Chapter 5 Homework Problem 1c */
 char* hw5_1cPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
-    randomBytes(s,lambda);
+    randomBytes(s,sizeof(char)*lambda);
     /* xyz = x||y||z = G(s) */
     char* xyz = hw5_1G(s);
     /* Even though xyz has 3*lambda length, the function will only read the
@@ -703,6 +738,7 @@ int hw5_1cPrgAttack(char (*attack)(Scheme*)){
         scheme.QUERY = hw5_1cPRGreal;
     }
     char result = attack(&scheme);
+    cleanGlobals();
     if ((choice & 2) == 2 && result == '$'){
         return 1;
     } 
@@ -727,13 +763,15 @@ double hw5_1cPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
  * ==================================================================
  */
 /* Chapter 6 Homework Problem 1 */
+
+/* Returns 2*lambda bits */
 char* hw6_1Prf(char* k, char* m){
     /* linearPrf is defined to return lambda bits, but that pointer is 
      * assigned 2*lambda bits, so we will use those bits too.
      */
     char* res = linearPrf(k,m);
     char* tmp = linearPrf(k,res);
-    memcpy(res+lambda, tmp, lambda);
+    memcpy(res+lambda, tmp, sizeof(char)*lambda);
     free(tmp);
     return res;
 }
@@ -743,7 +781,13 @@ char* hw6_1LOOKUPreal(char* x){
 }
 
 char* hw6_1LOOKUPrand(char* x){
-
+    char* lookup = TLookup(x);
+    if (lookup == NULL){
+        lookup = malloc(sizeof(char)*2*lambda);
+        randomBytes(lookup, sizeof(char)*2*lambda);
+        Tadd(x, lookup);
+    }
+    return lookup;
 }
 
 int hw6_1PrfAttack(char (*attack)(Scheme*)){
@@ -755,8 +799,11 @@ int hw6_1PrfAttack(char (*attack)(Scheme*)){
     } else {
         scheme.LOOKUP = hw6_1LOOKUPreal;
     }
-    T = malloc(sizeof(char*)*lambda);
+    KEY = malloc(sizeof(char) * lambda);
+    randomBytes(KEY, sizeof(char)*lambda);
+    TInit(lambda, 2*lambda);
     char result = attack(&scheme);
+    cleanGlobals();
     if ((choice & 1) == 1 && result == '$'){
         return 1;
     } 
@@ -772,6 +819,75 @@ double hw6_1PrfAdvantage(unsigned int trials, char (*attack)(Scheme*)){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
         advantage += hw6_1PrfAttack(attack);
+    }
+    return advantage/(double) trials;
+}
+
+/* Homework 6 Problem 2 */
+/* The homework uses blen for inputs but does operations in blen/2,
+ * so this implementation will take 2*blen inputs so operations
+ * can be done in blen
+ */
+char* hw6_2Prf(char* k, char* m){
+    char* res = malloc(sizeof(char)*2*lambda);
+    char* x = m;
+    char* y = m+lambda;
+    char* x1 = y;
+    char* y1 = linearPrf(k,y);
+    xorBytes(y1, x, y1);
+    char* x2 = y1;
+    char* y2 = linearPrf(k,y1);
+    xorBytes(y2, x1, y2);
+    memcpy(res, x2, sizeof(char)*lambda);
+    memcpy(res + lambda, y2, sizeof(char)*lambda);
+    free(y1);
+    free(y2);
+    return res;
+}
+
+char* hw6_2LOOKUPreal(char* x){
+    return hw6_2Prf(KEY, x);
+}
+
+char* hw6_2LOOKUPrand(char* x){
+    char* lookup = TLookup(x);
+    if (lookup == NULL){
+        lookup = malloc(sizeof(char)*2*lambda);
+        randomBytes(lookup, sizeof(char)*2*lambda);
+        Tadd(x, lookup);
+    }
+    return lookup;
+}
+
+int hw6_2PrfAttack(char (*attack)(Scheme*)){
+    Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    char choice;
+    randomBytes(&choice, sizeof(char));
+    if (choice & 1){
+        scheme.LOOKUP = hw6_2LOOKUPrand;
+    } else {
+        scheme.LOOKUP = hw6_2LOOKUPreal;
+    }
+    KEY = malloc(sizeof(char) * lambda);
+    randomBytes(KEY, sizeof(char)*lambda);
+    TInit(2*lambda, 2*lambda);
+    char result = attack(&scheme);
+    cleanGlobals();
+    if ((choice & 1) == 1 && result == '$'){
+        return 1;
+    } 
+
+    if ((choice & 1) == 0 && result == 'r'){
+        return 1;
+    } 
+    
+    return 0;
+}
+
+double hw6_2PrfAdvantage(unsigned int trials, char (*attack)(Scheme*)){
+    double advantage = 0;
+    for (unsigned int i=0; i<trials; i++){
+        advantage += hw6_2PrfAttack(attack);
     }
     return advantage/(double) trials;
 }

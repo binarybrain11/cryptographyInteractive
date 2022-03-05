@@ -61,9 +61,7 @@ This function returns a psudeorandom number generated from the function
 specified by the scheme. 
 Developer's Note: Prf's require a running lookup table and key. The table 
 and key should be created at the beginning of an attack and destroyed at 
-the end of an attack. This could require launching a new thread to keep 
-the table and key in scope so that an attacking program can call LOOKUP() 
-many times. 
+the end of an attack. 
 
 PsudeoRandom Permutation (Prp):
 LOOKUP(x):
@@ -85,14 +83,6 @@ DECRYPT(c):
 This function will decrypt c and return the plaintext m. 
 Developer's Note: Similar to Prf's and Prp's, Cca's need to keep a running 
 lookup table and key. 
-
-Block Ciphers:
-Some of the chapters discuss block ciphers. In this case, functions have 
-an extra parameter blocks that describes the number of blocks of size bytes
-that are in the message or ciphertext parameters. EAVESDROP() is a function 
-that has two message parameters, in this case blocks describes both parameters 
-since there is a trivial attack on EAVESDROP() when the messages differ in 
-length.
 
 From this overview, check out the README for each language to see what chapters 
 and problems were successfully implemented. The schemes are labelled with 
