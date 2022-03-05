@@ -19,12 +19,12 @@ typedef struct {
 } Scheme;
 
 /* Generic Helper Functions */
-char* zeroBytes(ssize_t numBytes);
-char* oneBytes(ssize_t numBytes);
-char* randomBytes(ssize_t numBytes);
-char* xorBytes(char* a, char* b);
-char* andBytes(char* a, char* b);
-char* orBytes(char* a, char* b);
+char* zeroBytes(char* res, ssize_t numBytes);
+char* oneBytes(char* res, ssize_t numBytes);
+char* randomBytes(char* res, ssize_t numBytes);
+char* xorBytes(char* res, char* a, char* b);
+char* andBytes(char* res, char* a, char* b);
+char* orBytes(char* res, char* a, char* b);
 int isEqual(char* a, char* b);
 
 /* Chapter 2 section 3 example */
