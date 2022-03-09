@@ -1,8 +1,14 @@
-from ctypes import sizeof
+import random
 import secrets
 import sys
+
+from datetime import timezone
+import datetime
+
 # int.from_bytes(bytes, byteorder, *, signed=False)
 # SIZE IS BYTES
+
+L_SIZE = 8
 
 
 class Bits:
@@ -65,6 +71,17 @@ class Bits:
         result = Bits(self.size)
         result.bits = (self_int ^ other_int).to_bytes(xLen, sys.byteorder)
         return result
+
+    def __add__(self, other):
+        retBits = Bits(len(self.bits) + len(other.bits))
+        retBits.bits = self.bits + other.bits
+        return retBits
+
+    def __eq__(self, other):
+        if self.bits == other.bits:
+            return True
+        else:
+            return False
 
 
 class Scheme:
@@ -153,4 +170,130 @@ def se2_3CTXTrand(m):
     c = randBytes(len(m))
     return c
 
+
+def otpEnc(k, m):
+    return k ^ m
+
+# Check
+
+
+def se2_30tsAdvantage(trials, attack):
+    advantage = 0
+    for trial in trials:
+        advantage += se2_3OtsAttack(attack)
+    return advantage/trials
+
+
 # @todo implement homework 2
+
+########################### Homework 2 ###########################
+
+def hw2_1KeyGen():
+    k = Bits(L_SIZE)
+    k.rand()
+    d = Bits(L_SIZE)
+    d.set(0)
+    while k == d:
+        k.rand()
+    return k
+
+
+def hw2_1EAVESDROPL(mL, mR):
+    k = hw2_1KeyGen()
+    c = k ^ mL
+    return c
+
+
+def hw2_1EAVESDROPR(mL, mR):
+    k = hw2_1KeyGen()
+    c = k ^ mR
+    return c
+
+
+def hw2_1CTXTreal(m):
+    k = hw2_1KeyGen()
+    c = k ^ m
+    return c
+
+
+def hw2_1CTXTrandom(m):
+    c = Bits(L_SIZE)
+    c.rand()
+    return c
+
+
+def hw2_1OtsAttack(size, attack):
+
+    scheme = Scheme()
+    eavesChoice = secrets.choice([0, 1])
+    ctxtChoice = secrets.choice([0, 1])
+    if eavesChoice:
+        scheme.eavesdrop = hw2_1EAVESDROPL
+    else:
+        scheme.eavesdrop = hw2_1EAVESDROPR
+
+    if ctxtChoice:
+        scheme.ctxt = se2_3CTXTrand
+    else:
+        scheme.ctxt = se2_3CTXTreal
+
+    result = attack(size, scheme)
+
+    if (eavesChoice and result.lower() == 'left'):
+        return True
+
+    if (not eavesChoice and result.lower() == 'right'):
+        return True
+
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+
+# hw2_1KeyGen()
+
+
+def hw2_1OtsAdvantage(trials, attack):
+    advantage = 0
+    for trial in trials:
+        advantage += hw2_1OtsAttack(attack)
+    return advantage/trials
+
+
+########################### Homework 5 ###########################
+
+# random.seed(10)
+# random.random()
+# print(random.randint(1, 10), random.randint(1, 10))
+
+def hw5_1aPRGreal():
+    dt = datetime.datetime.now(timezone.utc)
+    utc_time = dt.replace(tzinfo=timezone.utc)
+    utc_timestamp = utc_time.timestamp()
+    print(utc_timestamp)
+    random.seed(utc_timestamp)
+    print(random.randint(1, 10), random.randint(1, 10))
+    print(random.randint(1, 10), random.randint(1, 10))
+    random.seed(10)
+    print(random.randint(1, 10))
+    print(random.randint(1, 10))
+
+
+hw5_1aPRGreal()
+
+x = Bits(1)
+y = Bits(1)
+x.set(1)
+y.set(0)
+
+xy = x + y
+print(x, y, xy)
+
+print(randBytes(1))
+print(int.from_bytes(random.randbytes(1), sys.byteorder, signed=False))
+
+random.randbytes(1)
