@@ -865,10 +865,13 @@ int hw6_2PrfAttack(char (*attack)(Scheme*)){
  * ==================================================================
  */
 /* Chapter 7 Problem 2 */
+/* Note k must be 3*lambda bytes long and m must be 2*lambda
+ * bytes long for the PRP 
+ */
 char* hw7_CpaEnc(char* k, char* m){
-    char* s1 = malloc(sizeof(char)*lambda);
+    char* s1 = malloc(sizeof(char)*2*lambda);
     randomBytes(s1, lambda);
-    char* s2 = malloc(sizeof(char)*lambda);
+    char* s2 = malloc(sizeof(char)*2*lambda);
     xorBytes(s2, s1, m);
     char* c = malloc(sizeof(char)*2*lambda);
     char* x = c+lambda;

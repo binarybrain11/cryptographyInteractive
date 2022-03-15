@@ -8,13 +8,18 @@ file BEFORE including cryptointeractive.h, like so:
 #define lambda 4
 #include "cryptointeractive.h"
 
+You can check cryptointeractive.h to see what problems are implemented 
+and for any extra details about a specific problem like which functions 
+a scheme implements or if the input/output have different sizes than 
+specified in the book or homework. 
+
 The attacking function will have the following prototype:
 char myAttack(Scheme *scheme);
 The Scheme struct carries function pointers to all of the functions defined 
 by the implemented library. Only the functions that are defined by the library 
 are given pointers, the others are NULL pointers; if the compiler doesn't
 like a function call, check that the function is implemented for the scheme.
-All of these functions return char*, and every one is allocated memory, so it 
+Every function that returns a char* returns allocated memory, so it 
 is up to the caller (you) to free this memory.
 The attacking function will return a single character to indicated its guess
 for distinguishing the actual libraries. The guesses are:
