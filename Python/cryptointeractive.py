@@ -1,3 +1,4 @@
+from email import generator
 import random
 import secrets
 import sys
@@ -74,7 +75,7 @@ class Bits:
 
     def __add__(self, other):
         retBits = Bits(len(self.bits) + len(other.bits))
-        retBits.bits = self.bits + other.bits
+        retBits.bits = other.bits + self.bits
         return retBits
 
     def __eq__(self, other):
@@ -270,30 +271,43 @@ def hw2_1OtsAdvantage(trials, attack):
 # random.random()
 # print(random.randint(1, 10), random.randint(1, 10))
 
-def hw5_1aPRGreal():
-    dt = datetime.datetime.now(timezone.utc)
-    utc_time = dt.replace(tzinfo=timezone.utc)
-    utc_timestamp = utc_time.timestamp()
-    print(utc_timestamp)
-    random.seed(utc_timestamp)
-    print(random.randint(1, 10), random.randint(1, 10))
-    print(random.randint(1, 10), random.randint(1, 10))
-    random.seed(10)
-    print(random.randint(1, 10))
-    print(random.randint(1, 10))
+def hw5_1aPRGreal(s):
+    random.seed(s)
+    x = random.randbytes(L_SIZE)
+    random.seed(0)
+    y = random.randbytes(L_SIZE)
 
 
-hw5_1aPRGreal()
+def generator(s):
+    random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
+    # check
+    x = random.randint(0, pow(2, L_SIZE*8))
+    b = Bits(L_SIZE)
+    b.set(x)
 
-x = Bits(1)
-y = Bits(1)
-x.set(1)
-y.set(0)
+    x = random.randbytes(L_SIZE)
+    # @todo check if 0 different than 0 to the lambda
+    random.seed(0)
+    y = random.randint(0, pow(2, L_SIZE*8))
+    b1 = Bits(L_SIZE)
+    b1.set(y)
+    return (b + b1)
 
-xy = x + y
-print(x, y, xy)
 
-print(randBytes(1))
-print(int.from_bytes(random.randbytes(1), sys.byteorder, signed=False))
+s = Bits(L_SIZE)
+s.set(0)
+s.rand()
+test = generator(s)
+print(test)
 
-random.randbytes(1)
+# bit1 = Bits(8)
+# bit1.rand()
+# s = int.from_bytes(bit1.bits, sys.byteorder, signed=False)
+# random.seed(s)
+# x = random.randint(1, 10)
+# x2 = random.randint(1, 10)
+# random.seed(1)
+# y = random.randint(1, pow).to_bytes(xLen, sys.byteorder)
+# y2 = random.randint(1, 10)
+# print(x, x2, y, y2)
+# random.randint(1, pow(2, L_SIZE)).to_bytes(L_SIZE, sys.byteorder)
