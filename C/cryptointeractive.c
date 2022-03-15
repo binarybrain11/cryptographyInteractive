@@ -25,8 +25,14 @@ ssize_t Tcapacity = 0;
 ssize_t TkeySize = 0;
 ssize_t TvalSize = 0;
 
+/* Initialize T table to 100 elements. Use the getters and setters for 
+ * elements in this table so the table can grow and access properly
+ * - keySize indicates how many bytes the keys in this table are
+ * - valSize indiactes how many btes the values in this table are
+ */
 void TInit(ssize_t keySize, ssize_t valSize){
     Tcapacity = 100;
+    Tsize = 0;
     T = malloc(sizeof(char*) * Tcapacity);
     TkeySize = keySize;
     TvalSize = valSize;
@@ -45,7 +51,10 @@ void TFree(){
     TvalSize = 0;
 }
 
-/* Returns a copy of the value pointed to by key (so the table value stays intact) */
+/* Returns a copy of the value pointed to by key (so the table value stays intact) 
+ * - key is TkeySize bytes long
+ * - return value is TvalueSize bytes long
+ */
 char* TLookup(char* key){
     /* Looks for corresponding key, returns value */
     int equals = 1;
@@ -62,7 +71,10 @@ char* TLookup(char* key){
     return NULL;
 }
 
-/* Adds key-value pair to T. If key exists, it will overwrite the existing value */
+/* Adds key-value pair to T. If key exists, it will overwrite the existing value 
+ * - key is TkeySize bytes long
+ * - value is TvalueSize bytes long
+ */
 void Tadd(char* key, char* value){
     char* valcpy = malloc(sizeof(char)*TvalSize);
     memcpy(valcpy, value, sizeof(char)*TvalSize);
@@ -89,10 +101,13 @@ void Tadd(char* key, char* value){
     Tsize += 2;
 }
 
+/* Cleans all of the allocated memory in global variables */
 void cleanGlobals(){
     if (T){
         TFree();
     }
+    Tsize = 0;
+    Tcapacity = 0;
     if (KEY){
         free(KEY);
         KEY = NULL;
@@ -104,6 +119,9 @@ void cleanGlobals(){
  * ==================================================================
  */
 
+/* - res needs to be at least numBytes long
+ * - numBytes is the number of bytes to store into res
+ */
 void randomBytes(char* res, ssize_t numBytes){
     int random = open("/dev/urandom", O_RDONLY);
     if (random < 0){
@@ -125,6 +143,14 @@ void randomBytes(char* res, ssize_t numBytes){
     }
 }
 
+/* Computes the distinguishing advantage of an attacker. 0.5 is unable to distinguish, 
+ * 1 is distinguishes correctly every time, 0 distinguishes incorrectly every time
+ * - trials is the number of trials to run the attack. The more trials, the more 
+ * accurate the advantage
+ * - attack is the user attack function to be called inside of the attackInterface
+ * - attackInterface is the function representing the problem, e.g. se2_3OtsAttack()
+ * - returns a double indicating the advantage of the attacker
+ */
 double Advantage(unsigned int trials, char (*attack)(), int (*attackInterface)()){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
@@ -133,37 +159,62 @@ double Advantage(unsigned int trials, char (*attack)(), int (*attackInterface)()
     return advantage/(double) trials;
 }
 
+/* Sets a block of memory to 0 bytes 
+ * - bytes is the block of memory to modify
+ * - numBytes is the number of bytes to modify. bytes must be at least this big
+ */
 void zeroBytes(char* bytes, ssize_t numBytes){
     for (ssize_t i=0; i<numBytes; i++){
         bytes[i] = 0;
     }
 }
 
+/* Sets a block of memory to bytes of all 1's, eg 0xFF
+ * - bytes is the block of memory to modify
+ * - numBytes is the number of bytes to modify. bytes must be at least this big
+ */
 void oneBytes(char* bytes, ssize_t numBytes){
     for (ssize_t i=0; i<lambda; i++){
         bytes[i] = 0xFF;
     }
 }
 
+/* Does a bitwise XOR over lambda bytes. 
+ * - res is the block of memory to store the results in. Must be at least lambda 
+ * bytes
+ * - a and b are operands of at least lambda bytes 
+ */
 void xorBytes(char* res, char* a, char* b){
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] ^ b[i];
     }
 }
 
+/* Does a bitwise AND over lambda bytes. 
+ * - res is the block of memory to store the results in. Must be at least lambda 
+ * bytes
+ * - a and b are operands of at least lambda bytes 
+ */
 void andBytes(char* res, char* a, char* b){
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] & b[i];
     }
 }
 
+/* Does a bitwise OR over lambda bytes. 
+ * - res is the block of memory to store the results in. Must be at least lambda 
+ * bytes
+ * - a and b are operands of at least lambda bytes 
+ */
 void orBytes(char* res, char* a, char* b){
     for (ssize_t i=0; i<lambda; i++){
         res[i] = a[i] | b[i];
     }
 }
 
-/* Returns false if either parameter is NULL */
+/* Returns 0 if operands aren't equal and a nonzero value if they are equal 
+ * - a and b are operands of at least lambda bytes
+ */
 int isEqual(char* a, char* b){
     if (a==NULL || b==NULL) { return 0; }
     char res = 0;
@@ -174,6 +225,9 @@ int isEqual(char* a, char* b){
     return res == 0;
 }
 
+/* Returns 0 if operand is nonzero, returns nonzero if 0. 
+ * - a is the operand of at least lambda bytes 
+ */
 int isZero(char* a){
     if (a==NULL) { return 0; }
     char res = 0;
@@ -184,6 +238,13 @@ int isZero(char* a){
     return res == 0;
 }
 
+/* Performs left bit shift on a over b bits and stores the result in res.
+ * - res is the result, must be at least lambda bytes long. This will not 
+ * exceed lambda bytes, so any bits shifted beyond lambda bytes will be lost,
+ * however bits already in res beyond lambda bytes will remain.
+ * - a is the operand of bits to be shifted, must be lambda bytes long.
+ * - b is the number of bits to shift to the left.
+ */
 void leftShiftBytes(unsigned char* res, unsigned char* a, int b){
     memcpy(res, a, lambda*sizeof(char));
     /* shift one byte at a time */
@@ -194,6 +255,7 @@ void leftShiftBytes(unsigned char* res, unsigned char* a, int b){
         b-=BYTE*sizeof(char);
     }
     unsigned char carry;
+    /* shift bits at a time */
     for (ssize_t i=lambda-1; i>0; i--){
         carry = res[i-1] >> (BYTE*sizeof(char) - b);
         res[i] = res[i] << b;
@@ -202,6 +264,11 @@ void leftShiftBytes(unsigned char* res, unsigned char* a, int b){
     res[0] = res[0] << b;
 }
 
+/* Performs right bit shift on a over b bits and stores the result in res.
+ * - res is the result, must be at least lambda bytes long. 
+ * - a is the operand of bits to be shifted, must be at least lambda bytes long.
+ * - b is the number of bits to shift to the right.
+ */
 void rightShiftBytes(unsigned char* res, unsigned char* a, int b){
     memcpy(res, a, lambda*sizeof(char));
     /* shift one byte at a time */
@@ -225,7 +292,11 @@ void rightShiftBytes(unsigned char* res, unsigned char* a, int b){
  * by Victor Shoup
  */
 
-/* Reuses memory caller provides rather than allocating new memory */
+/* Adds operands a and b together as though they were huge numbers 
+ * - res stores the sum. Must be at least lambda bytes long. Carry beyond 
+ * lambda bytes is ignored 
+ * - a and b are the summands. Must be at least lambda bytes long.
+ */
 void addBytes(char* res, char* a, char* b){
     unsigned char carry = 0;
     int tmp = 0;
@@ -236,7 +307,11 @@ void addBytes(char* res, char* a, char* b){
     }
 }
 
-/* Deals with 2*lambda to accomadate doubling PRG */
+/* Adds operands a and b together as though they were huge numbers 
+ * - res stores the sum. Must be at least 2*lambda bytes long. Carry beyond 
+ * lambda bytes is ignored 
+ * - a and b are the summands. Must be at least 2*lambda bytes long.
+ */
 void addDoubleBytes(char* res, char* a, char* b){
     unsigned char carry = 0;
     int tmp = 0;
@@ -247,6 +322,12 @@ void addDoubleBytes(char* res, char* a, char* b){
     }
 }
 
+/* Subtracts operands a and b as though they were huge numbers 
+ * - res stores the difference, spesifically res = a - b. Must be at least 
+ * lambda bytes long
+ * - a is the minuend, must be at least lambda bytes long.
+ * - a is the subtrahend, must be at least lambda bytes long.
+ */
 void subtractBytes(char* res, char* a, char* b){
     char carry = 0;
     /* tmp needs to be at least 1 byte bigger than a block (char) to catch carry bit */
@@ -258,6 +339,12 @@ void subtractBytes(char* res, char* a, char* b){
     }
 }
 
+/* Subtracts operands a and b as though they were huge numbers 
+ * - res stores the difference, spesifically res = a - b. Must be at least 
+ * 2*lambda bytes long
+ * - a is the minuend, must be at least 2*lambda bytes long.
+ * - a is the subtrahend, must be at least 2*lambda bytes long.
+ */
 void subtractDoubleBytes(char* res, char* a, char* b){
     char carry = 0;
     /* tmp needs to be at least 1 byte bigger than a block (char) to catch carry bit */
@@ -269,10 +356,10 @@ void subtractDoubleBytes(char* res, char* a, char* b){
     }
 }
 
-/* Notably returns string of length 2*lambda 
- * Also note the unsigned integers 
+/* Multiplies a and b together as though they were huge numbers. 
+ * - res stores the product. MUST be AT LEAST 2*lambda bytes long
+ * - a and b are factors, must be at least lambda bytes long
  */
-
 void multiplyBytes(unsigned char* res, unsigned char* a, unsigned char* b){
     char carry = 0;
     /* tmp needs to be at least twice as big as a block (char)*/
@@ -288,7 +375,10 @@ void multiplyBytes(unsigned char* res, unsigned char* a, unsigned char* b){
     }
 }
 
-/* Deals with 2*lambda to accomadate doubling PRG */
+/* Multiplies a and b together as though they were huge numbers. 
+ * - res stores the product. MUST be AT LEAST 4*lambda bytes long
+ * - a and b are factors, must be at least 2*lambda bytes long
+ */
 void multiplyDoubleBytes(unsigned char* res, unsigned char* a, unsigned char* b){
     char carry = 0;
     /* tmp needs to be at least twice as big as a block (char)*/
@@ -309,25 +399,68 @@ void multiplyDoubleBytes(unsigned char* res, unsigned char* a, unsigned char* b)
  * ==================================================================
  */
 
+/* Creates a randomly generated key of size bytes */
 char* KeyGen(ssize_t size){
     char* key = malloc(size*sizeof(char));
     randomBytes(key, size*sizeof(char));
     return key;
 }
 
-char* otpEnc(char* k, char* m){
+/* Performs deterministic OTP encrytpion on the message with the key.
+ * - k must be at least lambda bytes long
+ * - m must be at least lambda bytes long
+ * - returns a ciphertext that is lambda bytes long
+ */
+char* otpDetEnc(char* k, char* m){
     char* c = malloc(sizeof(char)*lambda);
-    for (ssize_t i=0; i<lambda; i++){
-        c[i] = m[i] ^ k[i];
-    }
+    xorBytes(c, k, m);
     return c;
+}
+
+/* Performs deterministic OTP decrytpion on the ciphertex with the key.
+ * - k must be at least lambda bytes long
+ * - c must be at least lambda bytes long
+ * - returns a message that is lambda bytes long
+ */
+char* otpDetDec(char* k, char* c){
+    char* m = malloc(sizeof(char)*lambda);
+    xorBytes(m, k, c);
+    return m;
+}
+
+/* Performs random OTP encrytpion on the message with the key.
+ * - k must be at least lambda bytes long
+ * - m must be at least lambda bytes long
+ * - returns ciphertext that is 2*lambda bytes long
+ */
+char* otpRandEnc(char* k, char* m){
+    char* c = malloc(sizeof(char)*2*lambda);
+    randomBytes(c+lambda, lambda);
+    char* prf = linearPrf(k, c+lambda);
+    xorBytes(c, prf, m);
+    free(prf);
+    return c;
+}
+
+/* Performs random OTP decrytpion on the ciphertext with the key.
+ * - k, must be at least lambda bytes long
+ * - c must be at least 2*lambda bytes long
+ * - returns messge that is lambda bytes long
+ */
+char* otpRandDec(char* k, char* c){
+    char* m = malloc(sizeof(char)*lambda);
+    char* prf = linearPrf(k, c+lambda);
+    xorBytes(m, prf, c);
+    free(prf);
+    return m;
 }
 
 /* This is a linear congruential generator. This is only used in the 
  * libraries where the user passes a seed that they create. This is a bad 
  * generator, but hopefully attacking this is harder than the attacking 
  * intended library. 
- * Returns lambda bytes
+ * - res stores the result and must be lambda bytes
+ * - seed must be lambda bytes
  */
 void linearG(char* res, char* seed){
     char* a = calloc(lambda, sizeof(char));
@@ -345,7 +478,13 @@ void linearG(char* res, char* seed){
     free(c);
 }
 
-/* Length doubling PRG: returns 2*lambda bytes */
+/* This is a length doubling linear congruential generator. This is only 
+ * used in libraries where the user passes a seed that they create. This is a 
+ * bad generator, but hopefully attacking this is harder than the attacking 
+ * intended library. 
+ * - res stores the result and must be 2*lambda bytes
+ * - seed must be lambda bytes
+ */
 void linearDoubleG(char* res, char* seed){
     char* a = calloc(2*lambda, sizeof(char));
     char* c = calloc(2*lambda, sizeof(char));
@@ -362,10 +501,13 @@ void linearDoubleG(char* res, char* seed){
     free(c);
 }
 
-/* PRF constructed using linearG to specification of Construction 6.4 */
-/* Returns lambda bytes, however 2*lambda bytes are allocated there */
+/* PRF constructed using linearG to specification of Construction 6.4 
+ * - k is the key and must be at least lambda bytes
+ * - x must be at least lambda bytes
+ * - returns lambda bytes, however 2*lambda bytes are allocated there
+ */
 char* linearPrf(char* k, char* x){
-    char* v = malloc(sizeof(char)*lambda*2);
+    char* v = calloc(lambda*2, sizeof(char));
     memcpy(v, k, sizeof(char)*lambda);
     linearDoubleG(v, v);
     for (ssize_t i=0; i<lambda; i++){
@@ -388,9 +530,10 @@ char* linearPrf(char* k, char* x){
 
 /* TODO test the PRP please god bc idk if it works */
 
-/* PRP constructed to the specification of Construction 6.11 */
-/* k must be 3*lambda bytes long representing 3 unique keys 
- * x must be 2*lambda bytes long 
+/* PRP constructed to the specification of Construction 6.11 
+ * - k must be 3*lambda bytes long representing 3 unique keys 
+ * - x must be 2*lambda bytes long 
+ * - returns 2*lambda bytes
  */
 char* linearPrp(char* k, char* x){
     char* v1 =  calloc(lambda, sizeof(char));
@@ -411,6 +554,11 @@ char* linearPrp(char* k, char* x){
     return v0;
 }
 
+/* PRP Inverse constructed to the specification of Construction 6.11
+ * - k must be 3*lambda bytes long representing 3 unique keys 
+ * - x must be 2*lambda bytes long 
+ * - returns 2*lambda bytes
+ */
 char* linearPrpInverse(char* k, char* x){
     char* v1 =  calloc(lambda, sizeof(char));
     memcpy(v1,x,lambda*sizeof(char));
@@ -429,6 +577,23 @@ char* linearPrpInverse(char* k, char* x){
     free(v1);
     return v0;
 }
+
+/* TODO delete this PRP test main */
+/*
+int main(){
+    char* zero = malloc(2*lambda);
+    zeroBytes(zero, 2*lambda);
+    char* key = KeyGen(3*lambda);
+    char* prp = linearPrp(key,zero);
+    char* prpInv = linearPrpInverse(key, prp);
+    printf("%lx\n%lx\n", *(long*)prp, *(long*)prpInv);
+    free(zero);
+    free(key);
+    free(prp);
+    free(prpInv);
+    return 0;
+}
+*/
 
 /* ==================================================================
  * CHAPTER 2
@@ -524,21 +689,21 @@ char* hw2_1KeyGen(){
 
 char* hw2_1EAVESDROPL(char* mL, char* mR){
     char* key = hw2_1KeyGen();
-    char* c = otpEnc(key, mL);
+    char* c = otpDetEnc(key, mL);
     free(key);
     return c;
 }
 
 char* hw2_1EAVESDROPR(char* mL, char* mR){
     char* key = hw2_1KeyGen();
-    char* c = otpEnc(key, mR);
+    char* c = otpDetEnc(key, mR);
     free(key);
     return c;
 }
 
 char* hw2_1CTXTreal(char* m){
     char* key = hw2_1KeyGen();
-    char* c = otpEnc(key, m);
+    char* c = otpDetEnc(key, m);
     free(key);
     return c;
 }
