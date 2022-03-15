@@ -9,7 +9,7 @@ import datetime
 # int.from_bytes(bytes, byteorder, *, signed=False)
 # SIZE IS BYTES
 
-L_SIZE = 8
+L_SIZE = 4
 
 
 class Bits:
@@ -271,43 +271,134 @@ def hw2_1OtsAdvantage(trials, attack):
 # random.random()
 # print(random.randint(1, 10), random.randint(1, 10))
 
-def hw5_1aPRGreal(s):
-    random.seed(s)
-    x = random.randbytes(L_SIZE)
-    random.seed(0)
-    y = random.randbytes(L_SIZE)
 
-
-def generator(s):
+def hw5_1G(s):
     random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
-    # check
-    x = random.randint(0, pow(2, L_SIZE*8))
-    b = Bits(L_SIZE)
+    # @follow-up why not use randbits here (says zach)
+    x = random.randint(0, pow(2, 3 * L_SIZE*8))
+    b = Bits(3 * L_SIZE)
     b.set(x)
-
-    x = random.randbytes(L_SIZE)
-    # @todo check if 0 different than 0 to the lambda
-    random.seed(0)
-    y = random.randint(0, pow(2, L_SIZE*8))
-    b1 = Bits(L_SIZE)
-    b1.set(y)
-    return (b + b1)
+    return b
 
 
-s = Bits(L_SIZE)
-s.set(0)
-s.rand()
-test = generator(s)
-print(test)
+def hw5_1aPRGReal(s):
+    x = hw5_1G(s)
+    b = Bits(L_SIZE)
+    b.set(0)
+    y = hw5_1G(b)
+    return (x + y)
 
-# bit1 = Bits(8)
-# bit1.rand()
-# s = int.from_bytes(bit1.bits, sys.byteorder, signed=False)
-# random.seed(s)
-# x = random.randint(1, 10)
-# x2 = random.randint(1, 10)
-# random.seed(1)
-# y = random.randint(1, pow).to_bytes(xLen, sys.byteorder)
-# y2 = random.randint(1, 10)
-# print(x, x2, y, y2)
-# random.randint(1, pow(2, L_SIZE)).to_bytes(L_SIZE, sys.byteorder)
+
+def hw5_1aPRGRand(s):
+    x = Bits(6*L_SIZE)
+    x.rand()
+    return x
+
+
+def hw5_1aAttack(size, attack):
+
+    scheme = Scheme()
+    ctxtChoice = secrets.choice([0, 1])
+    if ctxtChoice:
+        scheme.ctxt = hw5_1aPRGRand
+    else:
+        scheme.ctxt = hw5_1aPRGReal
+
+    result = attack(size, scheme)
+
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+
+def hw5_1aPrgAdvantage(trials, attack):
+    advantage = 0
+    for trial in trials:
+        advantage += hw5_1aAttack(attack)
+    return advantage/trials
+
+
+def hw5_1bPRGReal(s):
+    x = hw5_1G(s)
+    b = Bits(L_SIZE)
+    b.set(0)
+    y = hw5_1G(b)
+    return (x ^ y)
+
+
+def hw5_1bPRGRand(s):
+    x = Bits(6*L_SIZE)
+    x.rand()
+    return x
+
+
+def hw5_1bAttack(size, attack):
+
+    scheme = Scheme()
+    ctxtChoice = secrets.choice([0, 1])
+    if ctxtChoice:
+        scheme.ctxt = hw5_1bPRGRand
+    else:
+        scheme.ctxt = hw5_1bPRGReal
+
+    result = attack(size, scheme)
+
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+
+def hw5_1bPrgAdvantage(trials, attack):
+    advantage = 0
+    for trial in trials:
+        advantage += hw5_1bAttack(attack)
+    return advantage/trials
+
+
+def hw5_1cPRGReal(s):
+    x = hw5_1G(s)
+    temp = Bits(L_SIZE)
+    temp.bits = x.bits[2*L_SIZE:3*L_SIZE]
+    y = hw5_1G(temp)
+    return (x + y)
+
+
+def hw5_1cPRGRand(s):
+    x = Bits(6*L_SIZE)
+    x.rand()
+    return x
+
+
+def hw5_1cAttack(size, attack):
+
+    scheme = Scheme()
+    ctxtChoice = secrets.choice([0, 1])
+    if ctxtChoice:
+        scheme.ctxt = hw5_1cPRGRand
+    else:
+        scheme.ctxt = hw5_1cPRGReal
+
+    result = attack(size, scheme)
+
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+
+def hw5_1cPrgAdvantage(trials, attack):
+    advantage = 0
+    for trial in trials:
+        advantage += hw5_1bAttack(attack)
+    return advantage/trials
