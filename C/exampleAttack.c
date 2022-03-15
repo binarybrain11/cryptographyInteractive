@@ -28,7 +28,7 @@ int main(){
     } else {
         printf("Attack failed!\n");
     }
-    double advantage = se2_3OtsAdvantage(1000, se2_3OtsExampleAttack);
+    double advantage = Advantage(1000, se2_3OtsExampleAttack, se2_3OtsAttack);
     printf("Attack advantage: %f\n", advantage);
     return 0;
 }
