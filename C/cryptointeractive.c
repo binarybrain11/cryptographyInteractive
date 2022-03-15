@@ -476,6 +476,7 @@ void linearG(char* res, char* seed){
     memcpy(res, tmp+lambda, sizeof(char)*lambda);
     free(a);
     free(c);
+    free(tmp);
 }
 
 /* This is a length doubling linear congruential generator. This is only 
@@ -488,17 +489,26 @@ void linearG(char* res, char* seed){
 void linearDoubleG(char* res, char* seed){
     char* a = calloc(2*lambda, sizeof(char));
     char* c = calloc(2*lambda, sizeof(char));
+    char* tmpSeed = calloc(2*lambda, sizeof(char));
+    memcpy(tmpSeed, seed, lambda*sizeof(char));
     char* tmp = calloc(4*lambda, sizeof(char));
     c[0] = 4;
     /* set a = 2^lambda - 4 */
     subtractDoubleBytes(a,a,c);
     c[0] = 3;
-    multiplyDoubleBytes(tmp, seed, a);
+    multiplyDoubleBytes(tmp, tmpSeed, a);
+    addDoubleBytes(tmp, tmp, c);
+    /* Generator is done twice to properly fill out tmp since seed 
+     * only needs to be lambda bytes 
+     */
+    multiplyDoubleBytes(tmp, tmp, a);
     addDoubleBytes(tmp, tmp, c);
     /* only return upper bits since lower bits are somewhat predictable */
     memcpy(res, tmp+lambda, sizeof(char)*2*lambda);
     free(a);
     free(c);
+    free(tmp);
+    free(tmpSeed);
 }
 
 /* PRF constructed using linearG to specification of Construction 6.4 
@@ -527,8 +537,6 @@ char* linearPrf(char* k, char* x){
     }
     return v;
 }
-
-/* TODO test the PRP please god bc idk if it works */
 
 /* PRP constructed to the specification of Construction 6.11 
  * - k must be 3*lambda bytes long representing 3 unique keys 
@@ -577,23 +585,6 @@ char* linearPrpInverse(char* k, char* x){
     free(v1);
     return v0;
 }
-
-/* TODO delete this PRP test main */
-/*
-int main(){
-    char* zero = malloc(2*lambda);
-    zeroBytes(zero, 2*lambda);
-    char* key = KeyGen(3*lambda);
-    char* prp = linearPrp(key,zero);
-    char* prpInv = linearPrpInverse(key, prp);
-    printf("%lx\n%lx\n", *(long*)prp, *(long*)prpInv);
-    free(zero);
-    free(key);
-    free(prp);
-    free(prpInv);
-    return 0;
-}
-*/
 
 /* ==================================================================
  * CHAPTER 2
