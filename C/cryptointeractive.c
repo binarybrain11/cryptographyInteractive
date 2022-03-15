@@ -19,8 +19,6 @@
 
 /* Global variables to persist between library calls. */
 char* KEY = NULL;
-char* linearGseed = NULL;
-char* linearGx = NULL;
 char** T = NULL;
 ssize_t Tsize = 0;
 ssize_t Tcapacity = 0;
@@ -95,14 +93,6 @@ void cleanGlobals(){
     if (T){
         TFree();
     }
-    if (linearGseed){
-        free(linearGseed);
-        linearGseed = NULL;
-    }
-    if (linearGx){
-        free(linearGx);
-        linearGx = NULL;
-    }
     if (KEY){
         free(KEY);
         KEY = NULL;
@@ -133,6 +123,14 @@ void randomBytes(char* res, ssize_t numBytes){
             exit(1);
         }
     }
+}
+
+double Advantage(unsigned int trials, char (*attack)(), int (*attackInterface)()){
+    double advantage = 0;
+    for (unsigned int i=0; i<trials; i++){
+        advantage += attackInterface(attack);
+    }
+    return advantage/(double) trials;
 }
 
 void zeroBytes(char* bytes, ssize_t numBytes){
@@ -328,62 +326,44 @@ char* otpEnc(char* k, char* m){
 /* This is a linear congruential generator. This is only used in the 
  * libraries where the user passes a seed that they create. This is a bad 
  * generator, but hopefully attacking this is harder than the attacking 
- * intended library.
+ * intended library. 
+ * Returns lambda bytes
  */
 void linearG(char* res, char* seed){
-    if (!isEqual(seed, linearGseed)){
-        if (linearGseed){
-            free(linearGseed);
-        }
-        linearGseed = malloc(sizeof(char)*lambda);
-        memcpy(linearGseed, seed, sizeof(char)*lambda);
-        if (!linearGx){
-            linearGx = malloc(sizeof(char)*lambda*2);
-        }
-        memcpy(linearGx, seed, sizeof(char)*lambda);
-    }
-    char* a = calloc(2*lambda, sizeof(char));
-    char* c = calloc(2*lambda, sizeof(char));
+    char* a = calloc(lambda, sizeof(char));
+    char* c = calloc(lambda, sizeof(char));
+    char* tmp = calloc(2*lambda, sizeof(char));
     c[0] = 4;
     /* set a = 2^lambda - 4 */
     subtractBytes(a,a,c);
     c[0] = 3;
-    multiplyBytes(linearGx, linearGx, a);
-    addBytes(linearGx, linearGx, c);
+    multiplyBytes(tmp, seed, a);
+    addBytes(tmp, tmp, c);
     /* only return upper bits since lower bits are somewhat predictable */
-    memcpy(res, linearGx+lambda, sizeof(char)*lambda);
+    memcpy(res, tmp+lambda, sizeof(char)*lambda);
     free(a);
     free(c);
 }
 
-/* Length doubling PRG */
+/* Length doubling PRG: returns 2*lambda bytes */
 void linearDoubleG(char* res, char* seed){
-    if (!isEqual(seed, linearGseed)){
-        if (linearGseed){
-            free(linearGseed);
-        }
-        linearGseed = calloc(lambda*2, sizeof(char));
-        memcpy(linearGseed, seed, sizeof(char)*lambda);
-        if (!linearGx){
-            linearGx = calloc(lambda*4, sizeof(char));
-        }
-        memcpy(linearGx, seed, sizeof(char)*lambda);
-    }
     char* a = calloc(2*lambda, sizeof(char));
     char* c = calloc(2*lambda, sizeof(char));
+    char* tmp = calloc(4*lambda, sizeof(char));
     c[0] = 4;
     /* set a = 2^lambda - 4 */
     subtractDoubleBytes(a,a,c);
     c[0] = 3;
-    multiplyDoubleBytes(linearGx, linearGx, a);
-    addDoubleBytes(linearGx, linearGx, c);
+    multiplyDoubleBytes(tmp, seed, a);
+    addDoubleBytes(tmp, tmp, c);
     /* only return upper bits since lower bits are somewhat predictable */
-    memcpy(res, linearGx+lambda, sizeof(char)*2*lambda);
+    memcpy(res, tmp+lambda, sizeof(char)*2*lambda);
     free(a);
     free(c);
 }
 
 /* PRF constructed using linearG to specification of Construction 6.4 */
+/* Returns lambda bytes, however 2*lambda bytes are allocated there */
 char* linearPrf(char* k, char* x){
     char* v = malloc(sizeof(char)*lambda*2);
     memcpy(v, k, sizeof(char)*lambda);
@@ -404,6 +384,50 @@ char* linearPrf(char* k, char* x){
         }
     }
     return v;
+}
+
+/* TODO test the PRP please god bc idk if it works */
+
+/* PRP constructed to the specification of Construction 6.11 */
+/* k must be 3*lambda bytes long representing 3 unique keys 
+ * x must be 2*lambda bytes long 
+ */
+char* linearPrp(char* k, char* x){
+    char* v1 =  calloc(lambda, sizeof(char));
+    memcpy(v1,x,lambda*sizeof(char));
+    char* v0 =  calloc(lambda, sizeof(char));
+    memcpy(v0,x+lambda,lambda*sizeof(char));
+    char* tmp;
+    for (ssize_t i=0;i<3;i++){
+        tmp = linearPrf(k+(i*lambda), v1);
+        xorBytes(tmp,v0,tmp);
+        free(v0);
+        v0 = v1;
+        v1 = tmp;
+    }
+    /* Using the fact that linearPrf actually allocates 2*lambda bytes */
+    memcpy(v0+lambda, v1, lambda*sizeof(char));
+    free(v1);
+    return v0;
+}
+
+char* linearPrpInverse(char* k, char* x){
+    char* v1 =  calloc(lambda, sizeof(char));
+    memcpy(v1,x,lambda*sizeof(char));
+    char* v0 =  calloc(lambda, sizeof(char));
+    memcpy(v0,x+lambda,lambda*sizeof(char));
+    char* tmp;
+    for (ssize_t i=2;i>=0;i--){
+        tmp = linearPrf(k+(i*lambda), v1);
+        xorBytes(tmp,v0,tmp);
+        free(v0);
+        v0 = v1;
+        v1 = tmp;
+    }
+    /* Using the fact that linearPrf actually allocates 2*lambda bytes */
+    memcpy(v0+lambda, v1, lambda*sizeof(char));
+    free(v1);
+    return v0;
 }
 
 /* ==================================================================
@@ -486,14 +510,6 @@ int se2_3OtsAttack(char (*attack)(Scheme*)){
     return 0;
 }
 
-double se2_3OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += se2_3OtsAttack(attack);
-    }
-    return advantage/(double) trials;
-}
-
 /* Chapter 2 Homework Problem 1 */
 
 char* hw2_1KeyGen(){
@@ -566,14 +582,6 @@ int hw2_1OtsAttack(char (*attack)(Scheme*)){
     return 0;
 }
 
-double hw2_1OtsAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += hw2_1OtsAttack(attack);
-    }
-    return advantage/(double) trials;
-}
-
 /* ==================================================================
  * CHAPTER 5
  * ==================================================================
@@ -640,14 +648,6 @@ int hw5_1aPrgAttack(char (*attack)(Scheme*)){
     return 0;
 }
 
-double hw5_1aPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += hw5_1aPrgAttack(attack);
-    }
-    return advantage/(double) trials;
-}
-
 /* Chapter 5 Homework Problem 1b */
 char* hw5_1bPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
@@ -687,14 +687,6 @@ int hw5_1bPrgAttack(char (*attack)(Scheme*)){
     } 
     
     return 0;
-}
-
-double hw5_1bPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += hw5_1bPrgAttack(attack);
-    }
-    return advantage/(double) trials;
 }
 
 /* Chapter 5 Homework Problem 1c */
@@ -748,14 +740,6 @@ int hw5_1cPrgAttack(char (*attack)(Scheme*)){
     } 
     
     return 0;
-}
-
-double hw5_1cPrgAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += hw5_1cPrgAttack(attack);
-    }
-    return advantage/(double) trials;
 }
 
 /* ==================================================================
@@ -813,14 +797,6 @@ int hw6_1PrfAttack(char (*attack)(Scheme*)){
     } 
     
     return 0;
-}
-
-double hw6_1PrfAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += hw6_1PrfAttack(attack);
-    }
-    return advantage/(double) trials;
 }
 
 /* Homework 6 Problem 2 */
@@ -884,10 +860,22 @@ int hw6_2PrfAttack(char (*attack)(Scheme*)){
     return 0;
 }
 
-double hw6_2PrfAdvantage(unsigned int trials, char (*attack)(Scheme*)){
-    double advantage = 0;
-    for (unsigned int i=0; i<trials; i++){
-        advantage += hw6_2PrfAttack(attack);
-    }
-    return advantage/(double) trials;
+/* ==================================================================
+ * CHAPTER 7
+ * ==================================================================
+ */
+/* Chapter 7 Problem 2 */
+char* hw7_CpaEnc(char* k, char* m){
+    char* s1 = malloc(sizeof(char)*lambda);
+    randomBytes(s1, lambda);
+    char* s2 = malloc(sizeof(char)*lambda);
+    xorBytes(s2, s1, m);
+    char* c = malloc(sizeof(char)*2*lambda);
+    char* x = c+lambda;
+    x = linearPrp(k,s1);
+    c = linearPrp(k,s2);
+    free(s1);
+    free(s2);
+    return c;
 }
+

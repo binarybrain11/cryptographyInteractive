@@ -14,12 +14,16 @@ random, for example left or real, and see if your attacking program can correctl
 distinguish between them. It will then return a true or a false to indicate 
 if the attacking program succeeded.
 
-ensSdfAdvantage(trials, attackFun):
-This interface will basically call sdfAttack() trials times to compute an 
+Advantage(trials, attackFun, AttackInterface):
+This interface will basically call AttackInterface() trials times to compute an 
 advantage which will be returned as a decimal value. Sometimes an attacking 
 program has a significant advantage but occaisonally fails, so running many 
 trials to see if the attacker distinguishes correctly gives a more accurate 
-depiction of the attacker's capability. 
+depiction of the attacker's capability. Capability is measured from 0 to 1, 
+with 0.5 indicating the attack wasn't able to distinguish better than 
+random, 1 indicating the attack was able to distinguish correctly every time,
+and 0 indicating the attack was able to distinguish incorrectly every time 
+(consider flipping your output if you read a 0). 
 
 For example, suppose we want to attack the one time secrecy of one time pad, 
 then we could call otpOtsAttack(). The size and trials are parameters so 
