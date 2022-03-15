@@ -23,11 +23,13 @@ char se2_3OtsExampleAttack(Scheme *scheme){
 }
 
 int main(){
+    /*                  your attack here   */
     if (se2_3OtsAttack(se2_3OtsExampleAttack) == 1){
         printf("Attack successful!\n");
     } else {
         printf("Attack failed!\n");
     }
+    /*                           Trials    your attack here   attack interface */
     double advantage = Advantage(1000, se2_3OtsExampleAttack, se2_3OtsAttack);
     printf("Attack advantage: %f\n", advantage);
     return 0;

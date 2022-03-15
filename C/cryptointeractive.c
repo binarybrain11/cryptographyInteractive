@@ -1023,8 +1023,9 @@ int hw6_2PrfAttack(char (*attack)(Scheme*)){
 /* Chapter 7 Problem 2 */
 /* Note k must be 3*lambda bytes long and m must be 2*lambda
  * bytes long for the PRP 
+ * returns 
  */
-char* hw7_CpaEnc(char* k, char* m){
+char* hw7_2CpaEnc(char* k, char* m){
     char* s1 = malloc(sizeof(char)*2*lambda);
     randomBytes(s1, lambda);
     char* s2 = malloc(sizeof(char)*2*lambda);
@@ -1038,3 +1039,62 @@ char* hw7_CpaEnc(char* k, char* m){
     return c;
 }
 
+char* hw7_2EAVESDROPL(char* ml, char* mr){
+    char* key = KeyGen(3*lambda);
+    char* c = hw7_2CpaEnc(key, ml);
+    free(key);
+    return c;
+}
+
+char* hw7_2EAVESDROPR(char* ml, char* mr){
+    char* key = KeyGen(3*lambda);
+    char* c = hw7_2CpaEnc(key, mr);
+    free(key);
+    return c;
+}
+
+char* hw7_2CTXTreal(char* m){
+    char* key = KeyGen(3*lambda);
+    char* c = hw7_2CpaEnc(key, m);
+    free(key);
+    return c;
+}
+
+char* hw7_2CTXTrand(char* m){
+    char* c = malloc(2*lambda*sizeof(char));
+    randomBytes(c, 2*lambda);
+    return c;
+}
+
+int hw7_2CpaAttack(char (*attack)(Scheme*)){
+    Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    char choice;
+    randomBytes(&choice, sizeof(char));
+    if (choice & 1){
+        scheme.EAVESDROP = hw7_2EAVESDROPL;
+    } else {
+        scheme.EAVESDROP = hw7_2EAVESDROPR;
+    }
+    if (choice & 2){
+        scheme.CTXT = hw7_2CTXTrand;
+    } else {
+        scheme.CTXT = hw7_2CTXTreal;
+    }
+    char result = attack(&scheme);
+    if ((choice & 1) == 1 && result == 'L'){
+        return 1;
+    } 
+    if ((choice & 1) == 0 && result == 'R'){
+        return 1;
+    } 
+
+    if ((choice & 2) == 2 && result == '$'){
+        return 1;
+    } 
+
+    if ((choice & 2) == 0 && result == 'r'){
+        return 1;
+    } 
+    
+    return 0;
+}

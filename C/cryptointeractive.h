@@ -74,3 +74,8 @@ int hw6_1PrfAttack(char (*attack)(Scheme*));
  * Inputs and outputs for this scheme are 2*lambda rather than blen
  */
 int hw6_2PrfAttack(char (*attack)(Scheme*));
+/* Chapter 7 Homeowrk Problem 2
+ * Implements CTXT() and EAVESDROP() 
+ * The output (x,y) is concatenated with x as the most significant bits
+ */
+int hw7_2CpaAttack(char (*attack)(Scheme*)){
