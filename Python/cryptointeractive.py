@@ -115,6 +115,7 @@ def prf(k, m):
             output = prgDouble(v)
             v.bits = output.bits[(len(output)//2):len(output)]
     print(v)
+    return v
 
 
 def prgDouble(s):
@@ -470,3 +471,52 @@ def hw6_1PrfAdvantage(trials, attack):
     for trial in trials:
         advantage += hw6_1PrfAttack(attack)
     return advantage/trials
+
+
+def hw6_2Prf(k, v):
+    v0 = Bits(len(v)/2)
+    v1 = Bits(len(v)/2)
+    v0.bits = v.bits[0:(len(v)//2)]
+    v1.bits = v.bits[(len(v)//2): len(v)]
+    out = prf(k[0], v1)
+    v2 = out ^ v0
+    out2 = prf(k[1], v2)
+    v3 = out2 ^ v1
+    return v2+v3
+
+
+def hw6_2LOOKUPreal(x):
+    return hw6_2Prf(__KEY, x)
+
+
+def hw6_2LOOKUPrand(x):
+    if __T.get(x) == None:
+        bits = Bits(L_SIZE)
+        bits.rand()
+        __T[x] = bits
+    return __T[x]
+
+
+def hw6_2PrfAttack(size, attack):
+
+    scheme = Scheme()
+    ctxtChoice = secrets.choice([0, 1])
+    if ctxtChoice:
+        scheme.ctxt = hw6_2LOOKUPrand
+    else:
+        scheme.ctxt = hw6_2LOOKUPreal
+
+    k = Bits(L_SIZE)
+    k.rand()
+    __KEY = k
+    result = attack(size, scheme)
+    __T = {}
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+########################### Chapter 7 ###########################
