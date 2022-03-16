@@ -3,6 +3,7 @@ package cryptointeractive;
 use strict;
 use warnings;
 use Exporter;
+use Crypt::Random qw(makerandom);
 
 our @EXPORT = qw(se2_3OtsAttack);
 
@@ -29,6 +30,10 @@ sub otpDetEnc{
     return $c;
 }
 
+###############################################################################
+# Helper functions
+###############################################################################
+
 sub printbytes {
     my $bytes = shift;
     my $str = "";
@@ -37,6 +42,7 @@ sub printbytes {
     }
     return $str;
 }
+
 
 ################################################################################
 # Chapter 2
@@ -197,6 +203,156 @@ sub hw2_1OtsAttack {
     if (!($choice & 1) && ($result eq "right")){
         return 1;
     }
+    if ((($choice & 2) == 2) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 2) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+
+################################################################################
+# Chapter 5
+################################################################################
+
+
+########################################
+# Homework 5
+# Problem 1 a
+########################################
+
+sub hw5_1G{
+    my $lambda = shift;
+    my $s = shift;
+    srand($s);
+    my $x = "";
+    for (my $i = 0; $i < 3 * $lambda; $i++) {
+        $x .= chr(int(rand(256)));
+    }
+    return $x;
+}
+
+sub hw5_1aPRGreal{
+    my $lambda = shift;
+    my $s = shift;
+    my $x = hw5_1G($lambda, $s);
+    my $y = hw5_1G($lambda, 0);
+    return $x.$y;
+}
+
+sub hw5_1aPRGrand{
+    my $x = "";
+    for (my $i = 0; $i < 6 * $lambda; $i++) {
+        $x .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    return $x;
+}
+
+sub hw5_1aPrgAttack{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 2){
+        $scheme{'QUERY'} = \&hw5_1aPRGrand;
+    }
+    else{
+        $scheme{'QUERY'} = \&hw5_1aPRGreal;
+    }
+    my $result = $attack->($lambda, \%scheme);
+    if ((($choice & 2) == 2) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 2) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+
+########################################
+# Homework 5
+# Problem 1 b
+########################################
+
+sub hw5_1bPRGreal{
+    my $lambda = shift;
+    my $s = shift;
+    my $x = hw5_1G($lambda, $s);
+    my $y = hw5_1G($lambda, 0);
+    my $z = "";
+    for (my $i = 0; $i < 3 * $lambda; $i++) {
+        $z .= chr(ord(substr($x, $i, 1)) ^ ord(substr($y, $i, 1)));
+    }
+    return $z;
+}
+
+sub hw5_1bPRGrand{
+    my $x = "";
+    for (my $i = 0; $i < 3 * $lambda; $i++) {
+        $x .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    return $x;
+}
+
+sub hw5_1bPrgAttack{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 2){
+        $scheme{'QUERY'} = \&hw5_1bPRGrand;
+    }
+    else{
+        $scheme{'QUERY'} = \&hw5_1bPRGreal;
+    }
+    my $result = $attack->($lambda, \%scheme);
+    if ((($choice & 2) == 2) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 2) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+
+########################################
+# Homework 5
+# Problem 1 c
+########################################
+
+sub hw5_1cPRGreal{
+    my $lambda = shift;
+    my $s = shift;
+    my $combined = hw5_1G($lambda, $s);
+    my $x = substr($combined, 0, $lambda);
+    my $w = hw5_1G($lambda, $x);
+    return $combined.$w;
+}
+
+sub hw5_1cPRGrand{
+    my $x = "";
+    for (my $i = 0; $i < 6 * $lambda; $i++) {
+        $x .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    return $x;
+}
+
+sub hw5_1cPrcAttack{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 2){
+        $scheme{'QUERY'} = \&hw5_1cPRGrand;
+    }
+    else{
+        $scheme{'QUERY'} = \&hw5_1cPRGreal;
+    }
+    my $result = $attack->($lambda, \%scheme);
     if ((($choice & 2) == 2) && ($result eq "random")){
         return 1;
     }
