@@ -74,7 +74,7 @@ int hw5_1cPrgAttack(char (*attack)(Scheme*));
 int hw6_1PrfAttack(char (*attack)(Scheme*));
 /* Chapter 6 Homework Problem 2 
  * Implements LOOKUP() 
- * Inputs and outputs for this scheme are 2*lambda rather than blen
+ * Inputs and outputs for this scheme are 2*lambda rather than lambda
  */
 int hw6_2PrfAttack(char (*attack)(Scheme*));
 /* Chapter 7 Homeowrk Problem 2

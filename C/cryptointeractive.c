@@ -493,7 +493,7 @@ void linearDoubleG(char* res, char* seed){
     memcpy(tmpSeed, seed, lambda*sizeof(char));
     char* tmp = calloc(4*lambda, sizeof(char));
     c[0] = 4;
-    /* set a = 2^lambda - 4 */
+    /* set a = 2^(2*lambda) - 4 */
     subtractDoubleBytes(a,a,c);
     c[0] = 3;
     multiplyDoubleBytes(tmp, tmpSeed, a);
@@ -873,8 +873,8 @@ char* hw5_1cPRGreal(){
 }
 
 char* hw5_1cPRGrand(){
-    char* res = malloc(3*lambda*sizeof(char));
-    randomBytes(res, 3*lambda*sizeof(char));
+    char* res = malloc(6*lambda*sizeof(char));
+    randomBytes(res, 6*lambda*sizeof(char));
     return res;
 }
 
@@ -911,8 +911,8 @@ char* hw6_1Prf(char* k, char* m){
     /* linearPrf is defined to return lambda bits, but that pointer is 
      * assigned 2*lambda bits, so we will use those bits too.
      */
-    char* res = linearPrf(k,m);
-    char* tmp = linearPrf(k,res);
+    char* tmp = linearPrf(k,m);
+    char* res = linearPrf(k,tmp);
     memcpy(res+lambda, tmp, sizeof(char)*lambda);
     free(tmp);
     return res;
@@ -959,8 +959,10 @@ int hw6_1PrfAttack(char (*attack)(Scheme*)){
 
 /* Homework 6 Problem 2 */
 /* The homework uses blen for inputs but does operations in blen/2,
- * so this implementation will take 2*blen inputs so operations
- * can be done in blen
+ * so this implementation will take 2*lambda inputs so operations
+ * can be done in lambda
+ * - k is 2*lambda bytes
+ * - m is 2*lambda bytes
  */
 char* hw6_2Prf(char* k, char* m){
     char* res = malloc(sizeof(char)*2*lambda);
@@ -970,7 +972,7 @@ char* hw6_2Prf(char* k, char* m){
     char* y1 = linearPrf(k,y);
     xorBytes(y1, x, y1);
     char* x2 = y1;
-    char* y2 = linearPrf(k,y1);
+    char* y2 = linearPrf(k+lambda,y1);
     xorBytes(y2, x1, y2);
     memcpy(res, x2, sizeof(char)*lambda);
     memcpy(res + lambda, y2, sizeof(char)*lambda);
@@ -1002,8 +1004,8 @@ int hw6_2PrfAttack(char (*attack)(Scheme*)){
     } else {
         scheme.LOOKUP = hw6_2LOOKUPreal;
     }
-    KEY = malloc(sizeof(char) * lambda);
-    randomBytes(KEY, sizeof(char)*lambda);
+    KEY = malloc(sizeof(char) * 2*lambda);
+    randomBytes(KEY, sizeof(char)*2*lambda);
     TInit(2*lambda, 2*lambda);
     char result = attack(&scheme);
     cleanGlobals();
