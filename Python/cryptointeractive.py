@@ -1,15 +1,11 @@
-from email import generator
 import random
 import secrets
 import sys
-
 from datetime import timezone
-import datetime
-
-# int.from_bytes(bytes, byteorder, *, signed=False)
-# SIZE IS BYTES
 
 L_SIZE = 4
+__KEY = None
+__T = {}
 
 
 class Bits:
@@ -84,6 +80,9 @@ class Bits:
         else:
             return False
 
+    def __len__(self):
+        return len(self.bits)
+
 
 class Scheme:
     def __init__(self, eavesdrop=None, ctxt=None, query=None, lookup=None, inverse=None, decrypt=None):
@@ -101,6 +100,32 @@ def randBytes(size):
 
 def keyGen(size):
     return (secrets.randbits(size*8)).to_bytes(size, sys.byteorder)
+
+
+def prf(k, m):
+    print('prf')
+    v = Bits(len(k))
+    v.bits = k.bits
+    output = Bits(2 * len(k))
+    for bit in str(m):
+        if bit == '0':
+            output = prgDouble(v)
+            v.bits = output.bits[0:(len(output)//2)]
+        else:
+            output = prgDouble(v)
+            v.bits = output.bits[(len(output)//2):len(output)]
+    print(v)
+    return v
+
+
+def prgDouble(s):
+    random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
+    x = random.randint(0, pow(2, 2 * len(s)*8))
+    y = Bits(2*len(s))
+    y.set(x)
+    return y
+
+########################### Chapter 2 ###########################
 
 
 def se2_3EAVESDROPL(size, mL, mR):
@@ -185,10 +210,6 @@ def se2_30tsAdvantage(trials, attack):
     return advantage/trials
 
 
-# @todo implement homework 2
-
-########################### Homework 2 ###########################
-
 def hw2_1KeyGen():
     k = Bits(L_SIZE)
     k.rand()
@@ -265,7 +286,7 @@ def hw2_1OtsAdvantage(trials, attack):
     return advantage/trials
 
 
-########################### Homework 5 ###########################
+########################### Chapter 5 ###########################
 
 # random.seed(10)
 # random.random()
@@ -402,3 +423,100 @@ def hw5_1cPrgAdvantage(trials, attack):
     for trial in trials:
         advantage += hw5_1bAttack(attack)
     return advantage/trials
+
+
+########################### Chapter 6 ###########################
+
+def hw6_1Prf(k, m):
+    return prf(k, m) + prf(k, prf(k, m))
+
+
+def hw6_1LOOKUPreal(x):
+    return hw6_1Prf(__KEY, x)
+
+
+def hw6_1LOOKUPrand(x):
+    if __T.get(x) == None:
+        bits = Bits(L_SIZE)
+        bits.rand()
+        __T[x] = bits
+    return __T[x]
+
+
+def hw6_1PrfAttack(size, attack):
+
+    scheme = Scheme()
+    ctxtChoice = secrets.choice([0, 1])
+    if ctxtChoice:
+        scheme.ctxt = hw6_1LOOKUPrand
+    else:
+        scheme.ctxt = hw6_1LOOKUPreal
+
+    k = Bits(L_SIZE)
+    k.rand()
+    __KEY = k
+    result = attack(size, scheme)
+    __T = {}
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+
+def hw6_1PrfAdvantage(trials, attack):
+    advantage = 0
+    for trial in trials:
+        advantage += hw6_1PrfAttack(attack)
+    return advantage/trials
+
+
+def hw6_2Prf(k, v):
+    v0 = Bits(len(v)/2)
+    v1 = Bits(len(v)/2)
+    v0.bits = v.bits[0:(len(v)//2)]
+    v1.bits = v.bits[(len(v)//2): len(v)]
+    out = prf(k[0], v1)
+    v2 = out ^ v0
+    out2 = prf(k[1], v2)
+    v3 = out2 ^ v1
+    return v2+v3
+
+
+def hw6_2LOOKUPreal(x):
+    return hw6_2Prf(__KEY, x)
+
+
+def hw6_2LOOKUPrand(x):
+    if __T.get(x) == None:
+        bits = Bits(L_SIZE)
+        bits.rand()
+        __T[x] = bits
+    return __T[x]
+
+
+def hw6_2PrfAttack(size, attack):
+
+    scheme = Scheme()
+    ctxtChoice = secrets.choice([0, 1])
+    if ctxtChoice:
+        scheme.ctxt = hw6_2LOOKUPrand
+    else:
+        scheme.ctxt = hw6_2LOOKUPreal
+
+    k = Bits(L_SIZE)
+    k.rand()
+    __KEY = k
+    result = attack(size, scheme)
+    __T = {}
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
+
+########################### Chapter 7 ###########################

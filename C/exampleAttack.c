@@ -8,12 +8,23 @@
 #include "cryptointeractive.h"
 
 char se2_3OtsExampleAttack(Scheme *scheme){
+    /* Allocate memory. Since lambda is a constant, you could do this:
+     * char m[lambda] = {0};
+     * which would save you the burden of freeing memory and calling zeroBytes.
+     */ 
     char* m = malloc(sizeof(char)*lambda);
     zeroBytes(m, lambda);
+    /* Ask the scheme to encrypt the message. Since I'm calling CTXT(), this 
+     * should be a real vs rand attack
+     */
     char* c = scheme->CTXT(m);
     if (isEqual(m, c)){
+        /* Remember to free allocated memory, especially if you use the
+         * Advantage() function
+         */
         free(m);
         free(c);
+        /* return our guess */
         return 'r';
     } else {
         free(m);
