@@ -5,7 +5,7 @@ use warnings;
 use Exporter;
 use Crypt::Random qw(makerandom);
 
-our @EXPORT = qw(se2_3OtsAttack);
+our @EXPORT = qw(se2_3OtsDistinguish);
 
 ###############################################################################
 # Primitives
@@ -28,6 +28,25 @@ sub otpDetEnc{
         $c .= chr(ord(substr($m, $i, 1)) ^ ord(substr($k, $i, 1)));
     }
     return $c;
+}
+
+sub prf{
+    my $k = shift;
+    my $m = shift;
+    $output = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $m .= chr(ord(substr($m, $i, 1)) ^ ord(substr($k, $i, 1)));
+    }
+}
+
+sub prgDouble{
+    my $s = shift;
+    srand($s);
+    my $out = "";
+    for (my $i = 0; $i < 2 * length($s); $i++) {
+        $out .= chr(ord(rand(256)));
+    }
+    return $out;
 }
 
 ###############################################################################
@@ -94,7 +113,7 @@ sub se2_3CTXTrandom{
     return $c;
 }
 
-sub se2_3OtsAttack {
+sub se2_3OtsDistinguish {
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -178,7 +197,7 @@ sub hw2_1CTXTrandom{
     return $c;
 }
 
-sub hw2_1OtsAttack {
+sub hw2_1OtsDistinguish {
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -249,7 +268,7 @@ sub hw5_1aPRGrand{
     return $x;
 }
 
-sub hw5_1aPrgAttack{
+sub hw5_1aPrgDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -296,7 +315,7 @@ sub hw5_1bPRGrand{
     return $x;
 }
 
-sub hw5_1bPrgAttack{
+sub hw5_1bPrgDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -340,7 +359,7 @@ sub hw5_1cPRGrand{
     return $x;
 }
 
-sub hw5_1cPrcAttack{
+sub hw5_1cPrcDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -361,3 +380,12 @@ sub hw5_1cPrcAttack{
     }
     return 0;
 }
+
+################################################################################
+# Chapter 6
+################################################################################
+
+########################################
+# Homework 6
+# Problem 1
+########################################

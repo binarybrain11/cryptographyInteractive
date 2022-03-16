@@ -26,4 +26,4 @@ sub exampleAttack {
     }
 }
 
-print cryptointeractive::se2_3OtsAttack(1, \&exampleAttack), "\n";
+print cryptointeractive::se2_3OtsDistinguish(1, \&exampleAttack), "\n";
