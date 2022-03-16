@@ -30,15 +30,6 @@ sub otpDetEnc{
     return $c;
 }
 
-sub prf{
-    my $k = shift;
-    my $m = shift;
-    $output = "";
-    for (my $i = 0; $i < length($m); $i++) {
-        $m .= chr(ord(substr($m, $i, 1)) ^ ord(substr($k, $i, 1)));
-    }
-}
-
 sub prgDouble{
     my $s = shift;
     srand($s);
@@ -48,6 +39,25 @@ sub prgDouble{
     }
     return $out;
 }
+
+sub prf{
+    my $k = shift;
+    my $m = shift;
+    my $v = $k;
+    $output = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        for (my $j = 0; $j < 8; $j++) {
+            if (ord(substr($m, $i, 1)) & (0x80 >> $j)) {
+                $output = substr(prgDouble($k), length($k), length($k));
+            }
+            else {
+                $output = substr(prgDouble($k), 0, length($k));
+            }
+        }
+    }
+    return $output;
+}
+
 
 ###############################################################################
 # Helper functions
@@ -385,7 +395,136 @@ sub hw5_1cPrcDistinguish{
 # Chapter 6
 ################################################################################
 
+
 ########################################
 # Homework 6
 # Problem 1
 ########################################
+
+our $hw6_1GLOBAL_K;
+our %hw6_1GLOBAL_T;
+
+sub hw6_1Prf{
+    my $k = shift;
+    my $m = shift;
+    my $x = prf($k, $m);
+    my $y = prf($k, $x);
+    return $x . $y;
+}
+
+sub hw6_1LOOKUPreal{
+    my $m = shift;
+    return hw6_1Prf($hw6_1GLOBAL_K, $m);
+}
+
+sub hw6_1LOOKUPrand{
+    my $m = shift;
+    if (exists $hw6_1GLOBAL_T{$m}){
+        return $hw6_1GLOBAL_T{$m};
+    }
+    else{
+        my $x = "";
+        for (my $i = 0; $i < length($m); $i++) {
+            $x .= chr(makerandom(Size => 1, Strength => 0));
+        }
+        $hw6_1GLOBAL_T{$m} = $x;
+        return $x;
+    }
+}
+
+sub hw6_1PrfDistinguish{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 1){
+        $scheme{'LOOKUP'} = \&hw6_1LOOKUPrand;
+    }
+    else{
+        $scheme{'LOOKUP'} = \&hw6_1LOOKUPreal;
+    }
+    $hw6_1GLOBAL_K = "";
+    for (my $i = 0; $i < $lambda; $i++) {
+        $hw6_1GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    my $result = $attack->($lambda, \%scheme);
+    if ((($choice & 1) == 1) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 1) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+
+########################################
+# Homework 6
+# Problem 2
+########################################
+
+our $hw6_2GLOBAL_K;
+our %hw6_2GLOBAL_T;
+
+sub hw6_2Prf{
+    my $k = shift;
+    my $m = shift;
+    my $x = substr(prf($k, $m), 0, length($m) / 2);
+    my $y = substr(prf($k, $m), length($m) / 2, length($m) / 2);
+    my $outy = prf($k, $y);
+    my $v = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $v .= chr(ord(substr($outy, $i, 1)) ^ ord(substr($x, $i, 1)));
+    }
+    my $v2 = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $v2 .= chr(ord(substr($v, $i, 1)) ^ ord(substr($y, $i, 1)));
+    }
+    return $v . $v2;
+}
+
+sub hw6_2LOOKUPreal{
+    my $m = shift;
+    return hw6_2Prf($hw6_2GLOBAL_K, $m);
+}
+
+sub hw6_2LOOKUPrand{
+    my $m = shift;
+    if (exists $hw6_2GLOBAL_T{$m}){
+        return $hw6_2GLOBAL_T{$m};
+    }
+    else{
+        my $x = "";
+        for (my $i = 0; $i < length($m); $i++) {
+            $x .= chr(makerandom(Size => 1, Strength => 0));
+        }
+        $hw6_2GLOBAL_T{$m} = $x;
+        return $x;
+    }
+}
+
+sub hw6_2PrfDistinguish{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 1){
+        $scheme{'LOOKUP'} = \&hw6_2LOOKUPrand;
+    }
+    else{
+        $scheme{'LOOKUP'} = \&hw6_2LOOKUPreal;
+    }
+    $hw6_2GLOBAL_K = "";
+    for (my $i = 0; $i < $lambda; $i++) {
+        $hw6_2GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    my $result = $attack->($lambda, \%scheme);
+    if ((($choice & 1) == 1) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 1) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
