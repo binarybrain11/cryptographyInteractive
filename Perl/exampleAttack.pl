@@ -2,12 +2,21 @@
 
 use strict;
 use warnings;
-use CryptoInteractive;
+use lib ".";
+use cryptointeractive;
+
+sub printbytes {
+    my $bytes = shift;
+    my $i;
+    for ($i = 0; $i < length($bytes); $i++) {
+        printf("%08b", ord(substr($bytes, $i, 1)));
+    }
+}
 
 sub exampleAttack {
-    my ($size, $scheme) = @_;
-    my $m = "";
-    my $c = $scheme->{ctxt}->($m);
+    my ($lambda, $scheme) = @_;
+    my $m = "\0" x $lambda;
+    my $c = $scheme->{CTXT}->($m);
 
     if ($c eq $m){
         return "real";
@@ -17,4 +26,4 @@ sub exampleAttack {
     }
 }
 
-print se2_30tsAttack(\&exampleAttack);
+print cryptointeractive::se2_3OtsAttack(1, \&exampleAttack), "\n";
