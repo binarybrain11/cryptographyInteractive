@@ -28,7 +28,7 @@ char se2_3OtsExampleAttack(Scheme *scheme){
 }
 
 int main(){
-    /*                  your attack here   */
+    /*                       your attack here   */
     if (se2_3OtsDistinguish(se2_3OtsExampleAttack) == 1){
         printf("Attack successful!\n");
     } else {

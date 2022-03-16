@@ -475,8 +475,7 @@ void linearG(char* res, char* seed){
     free(tmp);
 }
 
-/* This is a length doubling linear congruential generator. This is only 
- * used in libraries where the user passes a seed that they create. This is a 
+/* This is a length doubling linear congruential generator. This is a 
  * bad generator, but hopefully attacking this is harder than the attacking 
  * intended library. 
  * - res stores the result and must be 2*lambda bytes
@@ -591,6 +590,9 @@ char* linearPrpInverse(char* k, char* x){
 
 /* 
  * One time secrecy (ots) example from Chapter 2 Section 3 of the book 
+ * - k lambda bytes key
+ * - m lambda bytes message
+ * - returns lambda bytes ciphertext
  */
 char* se2_3Enc(char* k, char* m){
     if (k==NULL || m == NULL){
