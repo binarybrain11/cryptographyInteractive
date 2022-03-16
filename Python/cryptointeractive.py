@@ -125,6 +125,19 @@ def prgDouble(s):
     y.set(x)
     return y
 
+
+def prp(k, v):
+    v0 = Bits(len(v)/2)
+    v1 = Bits(len(v)/2)
+    v0.bits = v.bits[0:(len(v)//2)]
+    v1.bits = v.bits[(len(v)//2): len(v)]
+    out = prf(k[0], v1)
+    v2 = out ^ v0
+    out2 = prf(k[1], v2)
+    v3 = out2 ^ v1
+    out3 = prf(k[2], v3)
+    v4 = out3 ^ v2
+    return v3+v4
 ########################### Chapter 2 ###########################
 
 
@@ -520,3 +533,84 @@ def hw6_2PrfAttack(size, attack):
     return False
 
 ########################### Chapter 7 ###########################
+
+# k needs to be an array
+# What is going on in the c code?
+
+
+def hw7_1cpaEnc(k, m):
+    r = Bits(L_SIZE)
+    r.rand()
+    c = prp(k, m + r)
+    return c
+
+
+def hw7_2cpaEnc(k, m):
+    s1 = Bits(L_SIZE)
+    s1.rand()
+    s2 = s1 + m
+    x = prp(k, s1)
+    y = prp(k, s2)
+    return x+y
+
+
+def hw7_2EAVESDROPL(mL, mR):
+    key = keyGen(3*L_SIZE)
+    k = Bits(3*L_SIZE)
+    k.bits = key
+    return hw7_2cpaEnc(k, mL)
+
+
+def hw7_2EAVESDROPR(mL, mR):
+    key = keyGen(3*L_SIZE)
+    k = Bits(3*L_SIZE)
+    k.bits = key
+    return hw7_2cpaEnc(k, mR)
+
+
+def hw7_2CTXTreal(m):
+    key = keyGen(3*L_SIZE)
+    k = Bits(3*L_SIZE)
+    k.bits = key
+    return hw7_2cpaEnc(k, m)
+
+
+def hw7_2CTXTrand(m):
+    key = keyGen(len(m))
+    c = Bits(len(m))
+    c.bits = key
+    return c
+
+
+def hw7_2CpaDistinguish(size, attack):
+    """
+    """
+    scheme = Scheme()
+    eavesChoice = secrets.choice([0, 1])
+    ctxtChoice = secrets.choice([0, 1])
+
+    if eavesChoice:
+        scheme.eavesdrop = hw7_2EAVESDROPL
+    else:
+        scheme.eavesdrop = hw7_2EAVESDROPR
+
+    if ctxtChoice:
+        scheme.ctxt = hw7_2CTXTrand
+    else:
+        scheme.ctxt = hw7_2CTXTreal
+
+    result = attack(size, scheme)
+
+    if (eavesChoice and result.lower() == 'left'):
+        return True
+
+    if (not eavesChoice and result.lower() == 'right'):
+        return True
+
+    if (ctxtChoice and result.lower() == 'random'):
+        return True
+
+    if (not ctxtChoice and result.lower() == 'real'):
+        return True
+
+    return False
