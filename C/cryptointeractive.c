@@ -524,8 +524,10 @@ char* linearPrf(char* k, char* x){
         char j;
         for (j=1; j>0; j*=2){
             if (x[i] & j){
+                /* lower bits of the output of linearDoubleG */
                 linearDoubleG(v, v);
             } else {
+                /* upper bits of the output of linearDoubleG */
                 linearDoubleG(v, v+(lambda*sizeof(char)));
             }
         }

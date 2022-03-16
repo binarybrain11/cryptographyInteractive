@@ -51,7 +51,10 @@ int se2_3OtsAttack(char (*attack)(Scheme*));
 int hw2_1OtsAttack(char (*attack)(Scheme*));
 
 /* Chapter 5 Homework Problem 1 
-/* *secure* length tripling PRG. Not actually secure, but treat it as such. */
+ * *secure* length tripling PRG. Not actually secure, but treat it as such. 
+ * - s is the seed with at least lambda bytes
+ * - returns 3*lambda bytes
+ */
 char* hw5_1G(char* s);
 /* Chapter 5 Homework Problem 1a 
  * Implements QUERY() 

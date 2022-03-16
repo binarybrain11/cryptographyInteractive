@@ -21,6 +21,7 @@ are given pointers, the others are NULL pointers; if the compiler doesn't
 like a function call, check that the function is implemented for the scheme.
 Every function that returns a char* returns allocated memory, so it 
 is up to the caller (you) to free this memory.
+
 The attacking function will return a single character to indicated its guess
 for distinguishing the actual libraries. The guesses are:
 'L' for the Left library in a left vs right attack
