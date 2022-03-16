@@ -1,0 +1,235 @@
+\documentclass[11pt]{article}
+
+%% Sample LaTeX for CS427/519
+%% Mike Rosulek
+%% last update 2017-01-23
+
+\usepackage{xspace,graphicx,amsmath,amssymb,xcolor}
+
+%% operators
+
+\newcommand{\pct}{\mathbin{\%}}
+% makes ":=" aligned better
+\usepackage{mathtools}
+\mathtoolsset{centercolon}
+
+% indistinguishability operator
+% http://tex.stackexchange.com/questions/22168/triple-approx-and-triple-approx-with-a-straight-middle-line
+\newcommand{\indist}{  \mathrel{\vcenter{\offinterlineskip
+  \hbox{$\sim$}\vskip-.35ex\hbox{$\sim$}\vskip-.35ex\hbox{$\sim$}}}}
+\renewcommand{\cong}{\indist}
+
+
+
+\newcommand{\K}{\mathcal{K}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\T}{\mathcal{T}}
+\newcommand{\D}{\mathcal{D}}
+
+\newcommand{\Enc}{\text{\sf Enc}}
+\newcommand{\Dec}{\text{\sf Dec}}
+\newcommand{\KeyGen}{\text{\sf KeyGen}}
+\newcommand{\eavs}{\text{EAVESDROP}}
+
+% fancy script L
+\usepackage[mathscr]{euscript}
+\renewcommand{\L}{\ensuremath{\mathscr{L}}\xspace}
+\newcommand{\lib}[1]{\ensuremath{\L_{\textsf{#1}}}\xspace}
+
+
+\newcommand{\myterm}[1]{\ensuremath{\text{#1}}\xspace}
+\newcommand{\bias}{\myterm{bias}}
+\newcommand{\link}{\diamond}
+\newcommand{\subname}[1]{\ensuremath{\textsc{#1}}\xspace}
+
+
+
+%% colors
+\definecolor{highlightcolor}{HTML}{F5F5A4}
+\definecolor{highlighttextcolor}{HTML}{000000}
+\definecolor{bitcolor}{HTML}{a91616}
+
+
+%%% boxes for writing libraries/constructions
+\usepackage{varwidth}
+
+\newcommand{\codebox}[1]{%
+        \begin{varwidth}{\linewidth}%
+        \begin{tabbing}%
+            ~~~\=\quad\=\quad\=\quad\=\kill % initialize tabstops
+            #1
+        \end{tabbing}%
+        \end{varwidth}%
+}
+\newcommand{\titlecodebox}[2]{%
+    \fboxsep=0pt%
+    \fcolorbox{black}{black!10}{%
+        \begin{varwidth}{\linewidth}%
+        \centering%
+        \fboxsep=3pt%
+        \colorbox{black!10}{#1} \\
+        \colorbox{white}{\codebox{#2}}%
+        \end{varwidth}%
+    }
+}
+\newcommand{\fcodebox}[1]{%
+    \framebox{\codebox{#1}}%
+}
+\newcommand{\hlcodebox}[1]{%
+    \fcolorbox{black}{highlightcolor}{\codebox{#1}}%
+}
+\newcommand{\hltitlecodebox}[2]{%
+    \fboxsep=0pt%
+    \fcolorbox{black}{black!15!highlightcolor}{%
+        \begin{varwidth}{\linewidth}%
+        \centering%
+        \fboxsep=3pt%
+        \colorbox{black!15!highlightcolor}{\color{highlighttextcolor}#1} \\
+        \colorbox{highlightcolor}{\color{highlighttextcolor}\codebox{#2}}%
+        \end{varwidth}%
+    }
+}
+
+
+%% highlighting
+\newcommand{\basehighlight}[1]{\colorbox{highlightcolor}{\color{highlighttextcolor}#1}}
+\newcommand{\mathhighlight}[1]{\basehighlight{$#1$}}
+\newcommand{\highlight}[1]{\raisebox{0pt}[-\fboxsep][-\fboxsep]{\basehighlight{#1}}}
+\newcommand{\highlightline}[1]{%\raisebox{0pt}[-\fboxsep][-\fboxsep]{
+    \hspace*{-\fboxsep}\basehighlight{#1}%
+%}
+}
+\usepackage{soul}
+\newcommand{\hlyellow}[1]{\sethlcolor{yellow}\hl{#1}}
+\newcommand{\hlorange}[1]{\sethlcolor{orange}\hl{#1}}
+\newcommand{\hlpink}[1]{\sethlcolor{pink}\hl{#1}}
+\newcommand{\hlgreen}[1]{\sethlcolor{green}\hl{#1}}
+\newcommand{\hlblue}[1]{\sethlcolor{cyan}\hl{#1}}
+\newcommand{\hlpurple}[1]{\sethlcolor{magenta}\hl{#1}}
+\newcommand{\hlgrey}[1]{\sethlcolor{lightgray}\hl{#1}}
+\newcommand{\hlred}[1]{\sethlcolor{red}\hl{#1}}
+
+%% bits
+\newcommand{\bit}[1]{\textcolor{bitcolor}{\texttt{\upshape #1}}}
+\newcommand{\bits}{\{\bit0,\bit1\}}
+
+\usepackage[a4paper, total={6in, 8in}]{geometry} % Wide margins
+\usepackage{enumitem}
+\usepackage[english]{babel}
+
+\usepackage[colorlinks=true, allcolors=blue]{hyperref} %Keep as last imported package, idk why
+
+\begin{document}
+
+\section*{Chapter 2}
+\subsection*{Section Example 2.3}
+\verb/se2_3Ots/
+
+\subsection*{Homework 2 Problem 1}
+\verb/hw2_1Ots/
+
+Consider a variant of one-time pad where we avoid choosing the all-zeroes key. 
+The modified KeyGen algorithm can be written as:
+\[
+    \fcodebox{
+        \underline{KeyGen:}\\
+        \> do \\
+        \>\> $k \gets \bits^\lambda$\\
+        \> until $k \ne 0^\lambda$\\
+        \> return k
+    }
+\]
+Hence $k$ is uniformly distributed over the \emph{set of all nonzero strings} 
+of length $\lambda$. The Enc and Dec algorithms are the same as normal one-time pad.  
+Formally show that this new encryption scheme does not satisfy one-time secrecy. 
+Explicitly state the libraries that are relevant for this problem; write a 
+calling program; derive the relevant output probabilities.
+
+\section*{Chapter 5}
+\subsection*{Homework 5 Problem 1}
+\verb/hw5_1G/
+
+Let $G : \bits^\lambda \implies \bits^{3\lambda}$ be a secure lengh-
+\textbf{tripling} PRG. For each function below, state whether it is also a 
+secure PRG. If the function is a secure PRG, give a proof. If not, then 
+describe a successful distinguisher and explicitly compute its advantage. 
+\begin{enumerate}[label=(\alph*)]
+    \begin{minipage}{.3\linewidth}
+        \item
+        \framebox{
+            \codebox{
+                \underline{$H(s):$}\\
+                \> $x := G(s)$\\
+                \> $y := G(\bit0^\lambda)$\\
+                \> return $x||y$
+            }
+        }
+    \end{minipage}
+    \begin{minipage}{.3\linewidth}
+        \item 
+        \framebox{
+            \codebox{
+                \underline{$H(s):$}\\
+                \> $x := G(s)$\\
+                \> $y := G(\bit0^\lambda)$\\
+                \> return $x \oplus y$\\
+            }
+        }
+    \end{minipage}
+    \begin{minipage}{.3\textwidth}
+        \item
+        \framebox{
+            \codebox{
+                \underline{$H(s):$}\\
+                \> $x||y||z := G(s)$\\
+                \> $w := G(x)$\\
+                \> return $x||y||z||w$
+            }
+        }
+    \end{minipage}
+\end{enumerate}
+
+\section*{Chapter 6}
+\subsection*{Homework 6 Problem 1}
+\verb/hw6_1Prg/
+
+Let $F$ be a secure PRF with $in = out = \lambda$. Define the 
+following function: 
+\[
+    F'(k,m) = F(k,m) || F(k,F(k,m))
+\]
+Show that $F'$ is \textbf{not} a secure PRF.
+
+\subsection*{Homework 6 Problem 2}
+\verb/hw6_2Prg/
+
+Show that a 2-round keyed Feistel cipher \textbf{cannot} be a secure PRP, no matter what its round
+functions are. Your attack should work without knowing the round keys, and it should
+work even with different (independent) round keys.
+\\
+\emph{Hint:} A successful attack requires two queries.
+
+\section*{Chapter 7}
+\subsection*{Homework 7 Problem 2}
+\verb/hw7_2Cpa/
+
+Let $F$ be a secure PRP with blocklength $\lambda$. Show that the following construction does not
+have CPA/CPA\$ security:
+
+\begin{center}
+    \framebox{
+        \codebox{
+            \underline{Enc($k,m$):}\\
+            \> $s_1 \gets \bits^\lambda$\\
+            \> $s_2 := s_1 \oplus m$\\
+            \> $x:= F(k,s_1)$\\
+            \> $y:= F(k,s_2)$\\
+            \> return $(x,y)$
+        }
+    }
+\end{center}
+
+\end{document}
