@@ -5,7 +5,8 @@ use warnings;
 use Exporter;
 use Crypt::Random qw(makerandom);
 
-our @EXPORT = qw(se2_3OtsDistinguish);
+our @ISA = qw(Exporter);
+our @EXPORT = qw( se2_3OtsDistinguish hw2_1OtsDistinguish hw5_1aPrgDistinguish hw5_1bPrgDistinguish hw5_1cPrcDistinguish hw6_1PrfDistinguish hw6_2PrfDistinguish Advantage );
 
 ###############################################################################
 # Primitives
@@ -44,7 +45,7 @@ sub prf{
     my $k = shift;
     my $m = shift;
     my $v = $k;
-    $output = "";
+    my $output = "";
     for (my $i = 0; $i < length($m); $i++) {
         for (my $j = 0; $j < 8; $j++) {
             if (ord(substr($m, $i, 1)) & (0x80 >> $j)) {
@@ -72,6 +73,18 @@ sub printbytes {
     return $str;
 }
 
+sub Advantage{
+    my $trials = shift;
+    my $lambda = shift;
+    my $distinguisher = shift;
+    my $attacker = shift;
+    my $advantage = 0;
+    for (my $i = 0; $i < $trials; $i++) {
+        my $res = $distinguisher->($lambda, $attacker);
+        $advantage += $res;
+    }
+    return $advantage / $trials;
+}
 
 ################################################################################
 # Chapter 2
@@ -271,6 +284,8 @@ sub hw5_1aPRGreal{
 }
 
 sub hw5_1aPRGrand{
+    my $lambda = shift;
+    my $s = shift;
     my $x = "";
     for (my $i = 0; $i < 6 * $lambda; $i++) {
         $x .= chr(makerandom(Size => 1, Strength => 0));
@@ -318,6 +333,8 @@ sub hw5_1bPRGreal{
 }
 
 sub hw5_1bPRGrand{
+    my $lambda = shift;
+    my $s = shift;
     my $x = "";
     for (my $i = 0; $i < 3 * $lambda; $i++) {
         $x .= chr(makerandom(Size => 1, Strength => 0));
@@ -362,6 +379,8 @@ sub hw5_1cPRGreal{
 }
 
 sub hw5_1cPRGrand{
+    my $lambda = shift;
+    my $s = shift;
     my $x = "";
     for (my $i = 0; $i < 6 * $lambda; $i++) {
         $x .= chr(makerandom(Size => 1, Strength => 0));
@@ -527,4 +546,20 @@ sub hw6_2PrfDistinguish{
         return 1;
     }
     return 0;
+}
+1;
+
+################################################################################
+# Chapter 7
+################################################################################
+
+
+########################################
+# Homework 7
+# Problem 2
+########################################
+
+sub hw7_2CpaEnc{
+    my $k = shift;
+    my $m = shift;
 }

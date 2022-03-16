@@ -26,4 +26,4 @@ sub exampleAttack {
     }
 }
 
-print cryptointeractive::se2_3OtsDistinguish(1, \&exampleAttack), "\n";
+print Advantage(1000, 1, \&se2_3OtsDistinguish, \&exampleAttack), "\n";
