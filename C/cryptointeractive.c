@@ -14,12 +14,12 @@
 #endif
 
 /* Global variables to persist between library calls. */
-char* KEY = NULL;
-char** T = NULL;
-ssize_t Tsize = 0;
-ssize_t Tcapacity = 0;
-ssize_t TkeySize = 0;
-ssize_t TvalSize = 0;
+static char* KEY = NULL;
+static char** T = NULL;
+static ssize_t Tsize = 0;
+static ssize_t Tcapacity = 0;
+static ssize_t TkeySize = 0;
+static ssize_t TvalSize = 0;
 
 /* Initialize T table to 100 elements. Use the getters and setters for 
  * elements in this table so the table can grow and access properly
@@ -669,10 +669,12 @@ int se2_3OtsDistinguish(char (*attack)(Scheme*)){
 char* hw2_1KeyGen(){
     char* c = malloc(sizeof(char)*lambda);
     randomBytes(c, sizeof(char)*lambda);
-    char zero[lambda] = {0};
+    char* zero = malloc(sizeof(char)*lambda);
+    zeroBytes(zero, lambda);
     while (isEqual(c, zero)){
         randomBytes(c, sizeof(char)*lambda);
     }
+    free(zero);
     return c;
 }
 
@@ -803,12 +805,14 @@ char* hw5_1bPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
     randomBytes(s, sizeof(char)*lambda);
     char* x = hw5_1G(s);
-    char zero[lambda] = {0};
+    char* zero = malloc(sizeof(char)*lambda);
+    zeroBytes(zero, lambda);
     char* y = hw5_1G(zero);
     /* x = x xor y then return the new x */
     xorBytes(x,x,y);
     free(s);
     free(y);
+    free(zero);
     return x;
 }
 

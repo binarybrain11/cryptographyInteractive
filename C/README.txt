@@ -2,12 +2,8 @@ Welcome to the C implementation!
 
 Here in C land, any data whose length is defined by lambda bytes are 
 represented as character arrays and passed around with char* such as messages, 
-ciphertexts, and keys. lambda itself is a constant that you define when you 
-compile, or you can use the default of 4 bytes. An example of compiling 
-with cryptointeractive.c, cryptointeractive.h, and your main file in the 
-current directory would look like this:
-
-gcc -D lambda=4 cryptointeractive.c exampleAttack.c
+ciphertexts, and keys. lambda itself is a global variable provided by 
+cryptointeractive.h and is set to 4, but feel free to change it.
 
 You can check cryptointeractive.h to see what problems are implemented 
 and for any extra details about a specific problem like which functions 

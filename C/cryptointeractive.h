@@ -4,9 +4,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#ifndef lambda
-#define lambda 4
-#endif
+static ssize_t lambda = 4;
 
 typedef struct {
     /* Prototypes below are empty to support varying arguments depending 
