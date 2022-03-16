@@ -126,7 +126,47 @@
 
 \section*{Chapter 2}
 \subsection*{Section Example 2.3}
-\verb/se2_3Ots/
+\verb/se2_3Ots/\\
+\\
+\framebox[\linewidth]{
+    \begin{minipage}{.2\linewidth}
+    \vspace{-1em}
+    \begin{align*}
+        \K &= \bits^{\lambda}&\\
+        \M &= \bits^{\lambda}&\\
+        \C &= \bits^{\lambda}&
+    \end{align*}
+    \end{minipage}
+    \begin{minipage}{.2\linewidth}
+    \vspace{-1em}
+    \codebox{
+        \underline{KeyGen:}\\
+        \> $k\gets \bits^{\lambda}$\\
+        \> return $k$
+    }
+    \end{minipage}
+    \begin{minipage}{.3\linewidth}
+    \vspace{-2.3em}
+    \codebox{
+        \underline{Enc($k,m$):}\\
+        \> return $k$ \& $m$
+    }
+    \end{minipage}
+}
+
+\begin{center}
+    \titlecodebox{$\lib{ots\$-real}^\Sigma$}{
+        \underline{CTXT($m\in \bits^\lambda$):}\\
+        \> $k\gets \bits^\lambda$\\
+        \> $c := k$ \& $m$\\
+        \> return $c$
+    }
+    \titlecodebox{$\lib{ots\$-rand}^\Sigma$}{
+        \underline{CTXT($m\in \bits^\lambda$):}\\
+        \> $c \gets \bits^\lambda$\\
+        \> return $c$
+    }
+\end{center}
 
 \subsection*{Homework 2 Problem 1}
 \verb/hw2_1Ots/

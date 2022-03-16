@@ -5,7 +5,7 @@ use warnings;
 use Exporter;
 use Crypt::Random qw(makerandom);
 
-our @EXPORT = qw(se2_3OtsAttack);
+our @EXPORT = qw(se2_3OtsDistinguish);
 
 ###############################################################################
 # Primitives
@@ -29,6 +29,35 @@ sub otpDetEnc{
     }
     return $c;
 }
+
+sub prgDouble{
+    my $s = shift;
+    srand($s);
+    my $out = "";
+    for (my $i = 0; $i < 2 * length($s); $i++) {
+        $out .= chr(ord(rand(256)));
+    }
+    return $out;
+}
+
+sub prf{
+    my $k = shift;
+    my $m = shift;
+    my $v = $k;
+    $output = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        for (my $j = 0; $j < 8; $j++) {
+            if (ord(substr($m, $i, 1)) & (0x80 >> $j)) {
+                $output = substr(prgDouble($k), length($k), length($k));
+            }
+            else {
+                $output = substr(prgDouble($k), 0, length($k));
+            }
+        }
+    }
+    return $output;
+}
+
 
 ###############################################################################
 # Helper functions
@@ -94,7 +123,7 @@ sub se2_3CTXTrandom{
     return $c;
 }
 
-sub se2_3OtsAttack {
+sub se2_3OtsDistinguish {
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -178,7 +207,7 @@ sub hw2_1CTXTrandom{
     return $c;
 }
 
-sub hw2_1OtsAttack {
+sub hw2_1OtsDistinguish {
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -249,7 +278,7 @@ sub hw5_1aPRGrand{
     return $x;
 }
 
-sub hw5_1aPrgAttack{
+sub hw5_1aPrgDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -296,7 +325,7 @@ sub hw5_1bPRGrand{
     return $x;
 }
 
-sub hw5_1bPrgAttack{
+sub hw5_1bPrgDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -340,7 +369,7 @@ sub hw5_1cPRGrand{
     return $x;
 }
 
-sub hw5_1cPrcAttack{
+sub hw5_1cPrcDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
@@ -357,6 +386,144 @@ sub hw5_1cPrcAttack{
         return 1;
     }
     if (!($choice & 2) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+
+################################################################################
+# Chapter 6
+################################################################################
+
+
+########################################
+# Homework 6
+# Problem 1
+########################################
+
+our $hw6_1GLOBAL_K;
+our %hw6_1GLOBAL_T;
+
+sub hw6_1Prf{
+    my $k = shift;
+    my $m = shift;
+    my $x = prf($k, $m);
+    my $y = prf($k, $x);
+    return $x . $y;
+}
+
+sub hw6_1LOOKUPreal{
+    my $m = shift;
+    return hw6_1Prf($hw6_1GLOBAL_K, $m);
+}
+
+sub hw6_1LOOKUPrand{
+    my $m = shift;
+    if (exists $hw6_1GLOBAL_T{$m}){
+        return $hw6_1GLOBAL_T{$m};
+    }
+    else{
+        my $x = "";
+        for (my $i = 0; $i < length($m); $i++) {
+            $x .= chr(makerandom(Size => 1, Strength => 0));
+        }
+        $hw6_1GLOBAL_T{$m} = $x;
+        return $x;
+    }
+}
+
+sub hw6_1PrfDistinguish{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 1){
+        $scheme{'LOOKUP'} = \&hw6_1LOOKUPrand;
+    }
+    else{
+        $scheme{'LOOKUP'} = \&hw6_1LOOKUPreal;
+    }
+    $hw6_1GLOBAL_K = "";
+    for (my $i = 0; $i < $lambda; $i++) {
+        $hw6_1GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    my $result = $attack->($lambda, \%scheme);
+    if ((($choice & 1) == 1) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 1) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+
+########################################
+# Homework 6
+# Problem 2
+########################################
+
+our $hw6_2GLOBAL_K;
+our %hw6_2GLOBAL_T;
+
+sub hw6_2Prf{
+    my $k = shift;
+    my $m = shift;
+    my $x = substr(prf($k, $m), 0, length($m) / 2);
+    my $y = substr(prf($k, $m), length($m) / 2, length($m) / 2);
+    my $outy = prf($k, $y);
+    my $v = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $v .= chr(ord(substr($outy, $i, 1)) ^ ord(substr($x, $i, 1)));
+    }
+    my $v2 = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $v2 .= chr(ord(substr($v, $i, 1)) ^ ord(substr($y, $i, 1)));
+    }
+    return $v . $v2;
+}
+
+sub hw6_2LOOKUPreal{
+    my $m = shift;
+    return hw6_2Prf($hw6_2GLOBAL_K, $m);
+}
+
+sub hw6_2LOOKUPrand{
+    my $m = shift;
+    if (exists $hw6_2GLOBAL_T{$m}){
+        return $hw6_2GLOBAL_T{$m};
+    }
+    else{
+        my $x = "";
+        for (my $i = 0; $i < length($m); $i++) {
+            $x .= chr(makerandom(Size => 1, Strength => 0));
+        }
+        $hw6_2GLOBAL_T{$m} = $x;
+        return $x;
+    }
+}
+
+sub hw6_2PrfDistinguish{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = int(rand(256));
+    if ($choice & 1){
+        $scheme{'LOOKUP'} = \&hw6_2LOOKUPrand;
+    }
+    else{
+        $scheme{'LOOKUP'} = \&hw6_2LOOKUPreal;
+    }
+    $hw6_2GLOBAL_K = "";
+    for (my $i = 0; $i < $lambda; $i++) {
+        $hw6_2GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    my $result = $attack->($lambda, \%scheme);
+    if ((($choice & 1) == 1) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 1) && ($result eq "real")){
         return 1;
     }
     return 0;
