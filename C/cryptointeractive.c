@@ -13,10 +13,6 @@
 #define BYTE 8
 #endif
 
-#ifndef lambda
-#define lambda 4
-#endif
-
 /* Global variables to persist between library calls. */
 char* KEY = NULL;
 char** T = NULL;
@@ -147,14 +143,14 @@ void randomBytes(char* res, ssize_t numBytes){
  * 1 is distinguishes correctly every time, 0 distinguishes incorrectly every time
  * - trials is the number of trials to run the attack. The more trials, the more 
  * accurate the advantage
- * - attack is the user attack function to be called inside of the attackInterface
- * - attackInterface is the function representing the problem, e.g. se2_3OtsAttack()
+ * - attack is the user attack function to be called inside of the distinguish
+ * - distinguisher is the function representing the problem, e.g. se2_3OtsDistinguish()
  * - returns a double indicating the advantage of the attacker
  */
-double Advantage(unsigned int trials, char (*attack)(), int (*attackInterface)()){
+double Advantage(unsigned int trials, char (*attack)(), int (*distinguisher)()){
     double advantage = 0;
     for (unsigned int i=0; i<trials; i++){
-        advantage += attackInterface(attack);
+        advantage += distinguisher(attack);
     }
     return advantage/(double) trials;
 }
@@ -635,7 +631,7 @@ char* se2_3CTXTrandom(char* m){
     return c;
 }
 
-int se2_3OtsAttack(char (*attack)(Scheme*)){
+int se2_3OtsDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -707,7 +703,7 @@ char* hw2_1CTXTrandom(char* m){
     return c;
 }
 
-int hw2_1OtsAttack(char (*attack)(Scheme*)){
+int hw2_1OtsDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -767,12 +763,8 @@ char* hw5_1aPRGreal(){
     char* y = hw5_1G(zero);
     /* We return x||y where x and y are each 3*lambda bytes long */
     char* res = malloc(6*lambda*sizeof(char));
-    for (int i=0; i<3*lambda; i++){
-        res[i] = x[i];
-    }
-    for (int i=3*lambda; i<6*lambda; i++){
-        res[i] = y[i];
-    }
+    memcpy(res, y, lambda*sizeof(char));
+    memcpy(res+lambda, x, lambda*sizeof(char));
     free(s);
     free(x);
     free(y);
@@ -785,7 +777,7 @@ char* hw5_1aPRGrand(){
     return res;
 }
 
-int hw5_1aPrgAttack(char (*attack)(Scheme*)){
+int hw5_1aPrgDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -826,7 +818,7 @@ char* hw5_1bPRGrand(){
     return res;
 }
 
-int hw5_1bPrgAttack(char (*attack)(Scheme*)){
+int hw5_1bPrgDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -878,7 +870,7 @@ char* hw5_1cPRGrand(){
     return res;
 }
 
-int hw5_1cPrgAttack(char (*attack)(Scheme*)){
+int hw5_1cPrgDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -932,7 +924,7 @@ char* hw6_1LOOKUPrand(char* x){
     return lookup;
 }
 
-int hw6_1PrfAttack(char (*attack)(Scheme*)){
+int hw6_1PrfDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -995,7 +987,7 @@ char* hw6_2LOOKUPrand(char* x){
     return lookup;
 }
 
-int hw6_2PrfAttack(char (*attack)(Scheme*)){
+int hw6_2PrfDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -1070,7 +1062,7 @@ char* hw7_2CTXTrand(char* m){
     return c;
 }
 
-int hw7_2CpaAttack(char (*attack)(Scheme*)){
+int hw7_2CpaDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));

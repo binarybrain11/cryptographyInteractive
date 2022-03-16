@@ -4,11 +4,15 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
+#ifndef lambda
+#define lambda 4
+#endif
+
 typedef struct {
     /* Prototypes below are empty to support varying arguments depending 
-     * on the scheme 
+     * on the scheme. 
      */
-    /* For every function, the first parameter is the block length lambda */
+    
     char* (*EAVESDROP)();
     char* (*CTXT)();
     char* (*SHARE)();
@@ -33,7 +37,7 @@ void linearDoubleG(char* res, char* seed);
 char* linearPrf(char* k, char* x);
 
 /* Helper function to compute attack advantage */
-double Advantage(unsigned int trials, char (*attack)(), int (*attackInterface)());
+double Advantage(unsigned int trials, char (*attack)(), int (*distinguisher)());
 
 /* ======================================
  * Implemented Problems 
@@ -43,12 +47,12 @@ double Advantage(unsigned int trials, char (*attack)(), int (*attackInterface)()
 /* Chapter 2 section 3 example 
  * Implements CTXT() and EAVESDROP() 
  */
-int se2_3OtsAttack(char (*attack)(Scheme*));
+int se2_3OtsDistinguish(char (*attack)(Scheme*));
 
 /* Chapter 2 Homework Problem 1 
  * Implements CTXT() and EAVESDROP() 
  */
-int hw2_1OtsAttack(char (*attack)(Scheme*));
+int hw2_1OtsDistinguish(char (*attack)(Scheme*));
 
 /* Chapter 5 Homework Problem 1 
  * *secure* length tripling PRG. Not actually secure, but treat it as such. 
@@ -59,26 +63,26 @@ char* hw5_1G(char* s);
 /* Chapter 5 Homework Problem 1a 
  * Implements QUERY() 
  */
-int hw5_1aPrgAttack(char (*attack)(Scheme*));
+int hw5_1aPrgDistinguish(char (*attack)(Scheme*));
 /* Chapter 5 Homework Problem 1b 
  * Implements QUERY() 
  */
-int hw5_1bPrgAttack(char (*attack)(Scheme*));
+int hw5_1bPrgDistinguish(char (*attack)(Scheme*));
 /* Chapter 5 Homework Problem 1c 
  * Implements QUERY() 
  */
-int hw5_1cPrgAttack(char (*attack)(Scheme*));
+int hw5_1cPrgDistinguish(char (*attack)(Scheme*));
 /* Chapter 6 Homework Problem 1
  * Implements LOOKUP() 
  */
-int hw6_1PrfAttack(char (*attack)(Scheme*));
+int hw6_1PrfDistinguish(char (*attack)(Scheme*));
 /* Chapter 6 Homework Problem 2 
  * Implements LOOKUP() 
  * Inputs and outputs for this scheme are 2*lambda rather than lambda
  */
-int hw6_2PrfAttack(char (*attack)(Scheme*));
+int hw6_2PrfDistinguish(char (*attack)(Scheme*));
 /* Chapter 7 Homeowrk Problem 2
  * Implements CTXT() and EAVESDROP() 
  * The output (x,y) is concatenated with x as the most significant bits
  */
-int hw7_2CpaAttack(char (*attack)(Scheme*)){
+int hw7_2CpaDistinguish(char (*attack)(Scheme*));

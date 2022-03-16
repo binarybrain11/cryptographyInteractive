@@ -2,25 +2,38 @@ Welcome to the C implementation!
 
 Here in C land, any data whose length is defined by lambda bytes are 
 represented as character arrays and passed around with char* such as messages, 
-ciphertexts, and keys. lambda itself is a constant that you define in your 
-file BEFORE including cryptointeractive.h, like so:
+ciphertexts, and keys. lambda itself is a constant that you define when you 
+compile, or you can use the default of 4 bytes. An example of compiling 
+with cryptointeractive.c, cryptointeractive.h, and your main file in the 
+current directory would look like this:
 
-#define lambda 4
-#include "cryptointeractive.h"
+gcc -D lambda=4 cryptointeractive.c exampleAttack.c
 
 You can check cryptointeractive.h to see what problems are implemented 
 and for any extra details about a specific problem like which functions 
 a scheme implements or if the input/output have different sizes than 
 specified in the book or homework. 
 
-The attacking function will have the following prototype:
+Your attacking function must have the following prototype:
 char myAttack(Scheme *scheme);
 The Scheme struct carries function pointers to all of the functions defined 
 by the implemented library. Only the functions that are defined by the library 
 are given pointers, the others are NULL pointers; if the compiler doesn't
 like a function call, check that the function is implemented for the scheme.
 Every function that returns a char* returns allocated memory, so it 
-is up to the caller (you) to free this memory.
+is up to the caller (you) to free this memory. Some functions return 
+concatenated outputs or multiple variables in the output, in C we do 
+this by concatenating everything. Items reading left to right are 
+organized by most significant bits to least significant. For example, suppose 
+the output of a function is stored into c, but the return says (x,y). 
+We can access x and y by doing pointer arithmetic on c:
+
+char* c = exampleFunction();
+char* x = c + lambda;
+char* y = c;
+
+x stores the bytes that occur after lambda bytes while y stores the lambda 
+least significant bytes. The same would be true if a function returns x||y.
 
 The attacking function will return a single character to indicated its guess
 for distinguishing the actual libraries. The guesses are:

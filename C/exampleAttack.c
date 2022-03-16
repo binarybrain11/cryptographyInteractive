@@ -1,10 +1,6 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-/* Define these constants BEFORE the header file */
-
-#define lambda 4
-
 #include "cryptointeractive.h"
 
 char se2_3OtsExampleAttack(Scheme *scheme){
@@ -35,13 +31,13 @@ char se2_3OtsExampleAttack(Scheme *scheme){
 
 int main(){
     /*                  your attack here   */
-    if (se2_3OtsAttack(se2_3OtsExampleAttack) == 1){
+    if (se2_3OtsDistinguish(se2_3OtsExampleAttack) == 1){
         printf("Attack successful!\n");
     } else {
         printf("Attack failed!\n");
     }
     /*                           Trials    your attack here   attack interface */
-    double advantage = Advantage(1000, se2_3OtsExampleAttack, se2_3OtsAttack);
+    double advantage = Advantage(1000, se2_3OtsExampleAttack, se2_3OtsDistinguish);
     printf("Attack advantage: %f\n", advantage);
     return 0;
 }
