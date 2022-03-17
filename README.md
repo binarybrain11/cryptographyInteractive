@@ -184,17 +184,17 @@ equal. Returns 1 if they are, 0 if they aren't.
 
 # Python
 
-### Bits class
+### Bytes class
 
 The python implementation uses a class to abstract away binary strings.
 
 #### Constructor
 
-The class takes 1 argument for size i.e. exampleBits = Bits(size)
+The class takes 1 argument for size i.e. exampleBits = Bytes(size)
 
-#### Bits.set()
+#### Bytes.set()
 
-To set the bits to a specific value you can use the Bits.set() method.
+To set the bits to a specific value you can use the Bytes.set() method.
 The set method takes an int argument. 0 or 1 will set the entire string to 0's or 1's. Any other integer will set the bits to the binary representation of the number.
 
 #### Bitwise operators

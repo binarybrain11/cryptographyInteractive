@@ -10,7 +10,7 @@ __T = {}
 ########################### Primitives ###########################
 
 
-class Bits:
+class Bytes:
 
     '''
     Creates an object to represent binary.
@@ -19,7 +19,7 @@ class Bits:
                     size (int): Sets the size in bytes
 
             Returns:
-                    object (Bits): Bits object to represent binary
+                    object (Bytes): Bits object to represent binary
     '''
 
     def __init__(self, size):
@@ -68,7 +68,7 @@ class Bits:
             raise TypeError("Cannot AND variable length bits")
         self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
         other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
-        result = Bits(self.size)
+        result = Bytes(self.size)
         result.bits = (self_int & other_int).to_bytes(xLen, sys.byteorder)
         return result
 
@@ -79,7 +79,7 @@ class Bits:
             raise TypeError("Cannot OR variable length bits")
         self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
         other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
-        result = Bits(self.size)
+        result = Bytes(self.size)
         result.bits = (self_int | other_int).to_bytes(xLen, sys.byteorder)
         return result
 
@@ -90,12 +90,12 @@ class Bits:
             raise TypeError("Cannot XOR variable length bits")
         self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
         other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
-        result = Bits(self.size)
+        result = Bytes(self.size)
         result.bits = (self_int ^ other_int).to_bytes(xLen, sys.byteorder)
         return result
 
     def __add__(self, other):
-        retBits = Bits(len(self.bits) + len(other.bits))
+        retBits = Bytes(len(self.bits) + len(other.bits))
         retBits.bits = other.bits + self.bits
         return retBits
 
@@ -129,9 +129,9 @@ def keyGen(size):
 
 def prf(k, m):
     print('prf')
-    v = Bits(len(k))
+    v = Bytes(len(k))
     v.bits = k.bits
-    output = Bits(2 * len(k))
+    output = Bytes(2 * len(k))
     for bit in str(m):
         if bit == '0':
             output = prgDouble(v)
@@ -146,14 +146,14 @@ def prf(k, m):
 def prgDouble(s):
     random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
     x = random.randint(0, pow(2, 2 * len(s)*8))
-    y = Bits(2*len(s))
+    y = Bytes(2*len(s))
     y.set(x)
     return y
 
 
 def prp(k, v):
-    v0 = Bits(len(v)/2)
-    v1 = Bits(len(v)/2)
+    v0 = Bytes(len(v)/2)
+    v1 = Bytes(len(v)/2)
     v0.bits = v.bits[0:(len(v)//2)]
     v1.bits = v.bits[(len(v)//2): len(v)]
     out = prf(k[0], v1)
@@ -231,14 +231,14 @@ def __se2_3Enc(k, m):
 
 
 def __se2_3CTXTreal(m):
-    k = Bits(len(m))
+    k = Bytes(len(m))
     k.bits = keyGen(len(m))
     c = __se2_3Enc(k, m)
     return c
 
 
 def __se2_3CTXTrand(m):
-    c = Bits(len(m))
+    c = Bytes(len(m))
     c.rand()
     return c
 
@@ -255,9 +255,9 @@ def se2_30tsAdvantage(trials, attack):
 
 
 def __hw2_1KeyGen():
-    k = Bits(L_SIZE)
+    k = Bytes(L_SIZE)
     k.rand()
-    d = Bits(L_SIZE)
+    d = Bytes(L_SIZE)
     d.set(0)
     while k == d:
         k.rand()
@@ -283,7 +283,7 @@ def __hw2_1CTXTreal(m):
 
 
 def __hw2_1CTXTrandom(m):
-    c = Bits(L_SIZE)
+    c = Bytes(L_SIZE)
     c.rand()
     return c
 
@@ -347,25 +347,25 @@ def hw5_1G(s):
         Parameters:
             s - seed with at least lambda bytes
 
-        Returns: Bits(3 L_SIZE)
+        Returns: Bytes(3 L_SIZE)
     '''
     random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
     x = random.randint(0, pow(2, 3 * L_SIZE*8))
-    b = Bits(3 * L_SIZE)
+    b = Bytes(3 * L_SIZE)
     b.set(x)
     return b
 
 
 def __hw5_1aPRGReal(s):
     x = hw5_1G(s)
-    b = Bits(L_SIZE)
+    b = Bytes(L_SIZE)
     b.set(0)
     y = hw5_1G(b)
     return (x + y)
 
 
 def __hw5_1aPRGRand(s):
-    x = Bits(6*L_SIZE)
+    x = Bytes(6*L_SIZE)
     x.rand()
     return x
 
@@ -401,14 +401,14 @@ def hw5_1aPrgAdvantage(trials, attack):
 
 def __hw5_1bPRGReal(s):
     x = hw5_1G(s)
-    b = Bits(L_SIZE)
+    b = Bytes(L_SIZE)
     b.set(0)
     y = hw5_1G(b)
     return (x ^ y)
 
 
 def __hw5_1bPRGRand(s):
-    x = Bits(6*L_SIZE)
+    x = Bytes(6*L_SIZE)
     x.rand()
     return x
 
@@ -444,14 +444,14 @@ def hw5_1bPrgAdvantage(trials, attack):
 
 def __hw5_1cPRGReal(s):
     x = hw5_1G(s)
-    temp = Bits(L_SIZE)
+    temp = Bytes(L_SIZE)
     temp.bits = x.bits[2*L_SIZE:3*L_SIZE]
     y = hw5_1G(temp)
     return (x + y)
 
 
 def __hw5_1cPRGRand(s):
-    x = Bits(6*L_SIZE)
+    x = Bytes(6*L_SIZE)
     x.rand()
     return x
 
@@ -497,7 +497,7 @@ def __hw6_1LOOKUPreal(x):
 
 def __hw6_1LOOKUPrand(x):
     if __T.get(x) == None:
-        bits = Bits(L_SIZE)
+        bits = Bytes(L_SIZE)
         bits.rand()
         __T[x] = bits
     return __T[x]
@@ -514,7 +514,7 @@ def hw6_1PrfDistinguish(size, attack):
     else:
         scheme.ctxt = __hw6_1LOOKUPreal
 
-    k = Bits(L_SIZE)
+    k = Bytes(L_SIZE)
     k.rand()
     __KEY = k
     result = attack(size, scheme)
@@ -536,8 +536,8 @@ def hw6_1PrfAdvantage(trials, attack):
 
 
 def __hw6_2Prp(k, v):
-    v0 = Bits(len(v)/2)
-    v1 = Bits(len(v)/2)
+    v0 = Bytes(len(v)/2)
+    v1 = Bytes(len(v)/2)
     v0.bits = v.bits[0:(len(v)//2)]
     v1.bits = v.bits[(len(v)//2): len(v)]
     out = prf(k[0], v1)
@@ -553,7 +553,7 @@ def __hw6_2LOOKUPreal(x):
 
 def __hw6_2LOOKUPrand(x):
     if __T.get(x) == None:
-        bits = Bits(L_SIZE)
+        bits = Bytes(L_SIZE)
         bits.rand()
         __T[x] = bits
     return __T[x]
@@ -571,7 +571,7 @@ def hw6_2PrpDistinguish(size, attack):
     else:
         scheme.ctxt = __hw6_2LOOKUPreal
 
-    k = Bits(L_SIZE)
+    k = Bytes(L_SIZE)
     k.rand()
     __KEY = k
     result = attack(size, scheme)
@@ -588,7 +588,7 @@ def hw6_2PrpDistinguish(size, attack):
 
 
 def __hw7_2cpaEnc(k, m):
-    s1 = Bits(L_SIZE)
+    s1 = Bytes(L_SIZE)
     s1.rand()
     s2 = s1 + m
     x = prp(k, s1)
@@ -598,28 +598,28 @@ def __hw7_2cpaEnc(k, m):
 
 def __hw7_2EAVESDROPL(mL, mR):
     key = keyGen(3*L_SIZE)
-    k = Bits(3*L_SIZE)
+    k = Bytes(3*L_SIZE)
     k.bits = key
     return __hw7_2cpaEnc(k, mL)
 
 
 def __hw7_2EAVESDROPR(mL, mR):
     key = keyGen(3*L_SIZE)
-    k = Bits(3*L_SIZE)
+    k = Bytes(3*L_SIZE)
     k.bits = key
     return __hw7_2cpaEnc(k, mR)
 
 
 def __hw7_2CTXTreal(m):
     key = keyGen(3*L_SIZE)
-    k = Bits(3*L_SIZE)
+    k = Bytes(3*L_SIZE)
     k.bits = key
     return __hw7_2cpaEnc(k, m)
 
 
 def __hw7_2CTXTrand(m):
     key = keyGen(len(m))
-    c = Bits(len(m))
+    c = Bytes(len(m))
     c.bits = key
     return c
 

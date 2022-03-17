@@ -2,7 +2,7 @@ from cryptointeractive import *
 
 
 def exampleAttack(size, scheme):
-    m = Bits(size)
+    m = Bytes(size)
     m.set(0)
     c = scheme.ctxt(m)
     if(m == c):
