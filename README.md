@@ -158,7 +158,7 @@ for distinguishing the actual libraries. The guesses are:
 'R' for the Right library in a left vs right attack  
 '$' for the random library in a real vs random attack  
 'r' for the real library in a real vs random attack  
-Every time the scheme's attack function is called to run your attacking
+Every time the scheme's distinguisher function is called to run your attacking
 function, it will randomly select which library to give your attacking
 function and put that implementation in the Scheme.
 
@@ -186,10 +186,22 @@ equal. Returns 1 if they are, 0 if they aren't.
 
 ### Bits class
 
-The python implementation uses a class to abstract away binary strings.  
+The python implementation uses a class to abstract away binary strings.
+
+#### Constructor
+
 The class takes 1 argument for size i.e. exampleBits = Bits(size)
+
+#### Bits.set()
+
 To set the bits to a specific value you can use the Bits.set() method.
 The set method takes an int argument. 0 or 1 will set the entire string to 0's or 1's. Any other integer will set the bits to the binary representation of the number.
+
+#### Bitwise operators
+
+The bits class supports python style bitwise operators such as +, ^ and |
+
+### Attack Function
 
 The attacking function will return a string to indicated its guess
 for distinguishing the actual libraries. The guesses are:  
