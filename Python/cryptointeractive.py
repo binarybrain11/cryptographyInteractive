@@ -673,14 +673,3 @@ def hw7_2PrfAdvantage(trials, attack):
     for i in range(0, trials):
         advantage += hw6_1PrfDistinguish(L_SIZE, attack)
     return advantage/trials
-
-
-x = Bytes(2)
-y = Bytes(2)
-
-x.set(1)
-print(x)
-y.set(0)
-z = x + y
-print(z)
-b = Bytes(2)
