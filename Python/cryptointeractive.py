@@ -3,7 +3,7 @@ import secrets
 import sys
 from datetime import timezone
 
-L_SIZE = 1
+L_SIZE = 4
 __KEY = None
 __T = {}
 
