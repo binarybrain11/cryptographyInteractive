@@ -107,7 +107,7 @@ char* otpDetEnc(char* k, char* m);
  * - c must be at least lambda bytes long
  * - returns a message that is lambda bytes long
  */
-char* otpDetDec(char* k, char* c){
+char* otpDetDec(char* k, char* c);
 
 /* Performs random OTP encrytpion on the message with the key.
  * - k must be at least lambda bytes long
@@ -203,9 +203,10 @@ int hw6_1PrfDistinguish(char (*attack)(Scheme*));
  * Implements LOOKUP() 
  * Inputs and outputs for this scheme are 2*lambda rather than lambda
  */
-int hw6_2PrfDistinguish(char (*attack)(Scheme*));
+int hw6_2PrpDistinguish(char (*attack)(Scheme*));
 /* Chapter 7 Homeowrk Problem 2
  * Implements CTXT() and EAVESDROP() 
  * The output (x,y) is concatenated with x as the most significant bits
+ * Inputs and outputs are 2*lambda rather than lambda
  */
 int hw7_2CpaDistinguish(char (*attack)(Scheme*));

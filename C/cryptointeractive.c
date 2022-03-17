@@ -516,7 +516,7 @@ char* linearPrf(char* k, char* x){
     memcpy(v, k, sizeof(char)*lambda);
     linearDoubleG(v, v);
     for (ssize_t i=0; i<lambda; i++){
-        char j;
+        unsigned char j;
         for (j=1; j>0; j*=2){
             if (x[i] & j){
                 /* lower bits of the output of linearDoubleG */
@@ -763,13 +763,15 @@ char* hw5_1aPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
     randomBytes(s, sizeof(char)*lambda);
     char* x = hw5_1G(s);
-    char zero[] = {0};
+    char* zero = malloc(sizeof(char)*lambda);
+    zeroBytes(zero, lambda);
     char* y = hw5_1G(zero);
     /* We return x||y where x and y are each 3*lambda bytes long */
     char* res = malloc(6*lambda*sizeof(char));
-    memcpy(res, y, lambda*sizeof(char));
-    memcpy(res+lambda, x, lambda*sizeof(char));
+    memcpy(res, y, 3*lambda*sizeof(char));
+    memcpy(res+3*lambda, x, 3*lambda*sizeof(char));
     free(s);
+    free(zero);
     free(x);
     free(y);
     return res;
@@ -845,25 +847,21 @@ int hw5_1bPrgDistinguish(char (*attack)(Scheme*)){
     return 0;
 }
 
-/* Chapter 5 Homework Problem 1c */
+/* Chapter 5 Homework Problem 1c 
+ * - returns 6*lambda bytes
+ */
 char* hw5_1cPRGreal(){
     char* s = malloc(sizeof(char)*lambda);
     randomBytes(s,sizeof(char)*lambda);
     /* xyz = x||y||z = G(s) */
     char* xyz = hw5_1G(s);
-    /* Even though xyz has 3*lambda length, the function will only read the
-     * first lambda bytes, or x, for the seed
-     */
-    char* w = hw5_1G(xyz);
+    char* x = xyz + 2*lambda;
+    char* w = hw5_1G(x);
     /* res = x||y||z||w */
     char* res = malloc(6*lambda*sizeof(char));
-    for (int i=0; i<3*lambda; i++){
-        res[i] = xyz[i];
-    }
-    for (int i=3*lambda; i<6*lambda; i++){
-        res[i] = w[i];
-    }
-
+    memcpy(res, w, sizeof(char)*lambda*3);
+    memcpy(res+3*lambda, xyz, sizeof(char)*lambda*3);
+    
     free(s);
     free(xyz);
     free(w);
@@ -962,25 +960,25 @@ int hw6_1PrfDistinguish(char (*attack)(Scheme*)){
  * - k is 2*lambda bytes
  * - m is 2*lambda bytes
  */
-char* hw6_2Prf(char* k, char* m){
+char* hw6_2Prp(char* k, char* m){
     char* res = malloc(sizeof(char)*2*lambda);
-    char* x = m;
-    char* y = m+lambda;
-    char* x1 = y;
-    char* y1 = linearPrf(k,y);
-    xorBytes(y1, x, y1);
-    char* x2 = y1;
+    char* x = m+lambda;
+    char* y = m;
+    char* y1 = x;
+    char* x1 = linearPrf(k,x);
+    xorBytes(x1, y, x1);
+    char* x2 = x1;
     char* y2 = linearPrf(k+lambda,y1);
     xorBytes(y2, x1, y2);
-    memcpy(res, x2, sizeof(char)*lambda);
-    memcpy(res + lambda, y2, sizeof(char)*lambda);
-    free(y1);
+    memcpy(res, y2, sizeof(char)*lambda);
+    memcpy(res + lambda, x2, sizeof(char)*lambda);
+    free(x1);
     free(y2);
     return res;
 }
 
 char* hw6_2LOOKUPreal(char* x){
-    return hw6_2Prf(KEY, x);
+    return hw6_2Prp(KEY, x);
 }
 
 char* hw6_2LOOKUPrand(char* x){
@@ -993,7 +991,7 @@ char* hw6_2LOOKUPrand(char* x){
     return lookup;
 }
 
-int hw6_2PrfDistinguish(char (*attack)(Scheme*)){
+int hw6_2PrpDistinguish(char (*attack)(Scheme*)){
     Scheme scheme = {NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char choice;
     randomBytes(&choice, sizeof(char));
@@ -1002,8 +1000,7 @@ int hw6_2PrfDistinguish(char (*attack)(Scheme*)){
     } else {
         scheme.LOOKUP = hw6_2LOOKUPreal;
     }
-    KEY = malloc(sizeof(char) * 2*lambda);
-    randomBytes(KEY, sizeof(char)*2*lambda);
+    KEY = KeyGen(2*lambda);
     TInit(2*lambda, 2*lambda);
     char result = attack(&scheme);
     cleanGlobals();
@@ -1032,12 +1029,12 @@ char* hw7_2CpaEnc(char* k, char* m){
     randomBytes(s1, lambda);
     char* s2 = malloc(sizeof(char)*2*lambda);
     xorBytes(s2, s1, m);
-    char* c = malloc(sizeof(char)*2*lambda);
-    char* x = c+lambda;
-    x = linearPrp(k,s1);
-    c = linearPrp(k,s2);
+    char* x = linearPrp(k,s1);
+    char* c = linearPrp(k,s2);
+    memcpy(c+lambda, x, lambda*sizeof(char));
     free(s1);
     free(s2);
+    free(x);
     return c;
 }
 
