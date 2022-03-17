@@ -379,9 +379,9 @@ def hw5_1aPrgDistinguish(size, attack):
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = __hw5_1aPRGRand
+        scheme.query = __hw5_1aPRGRand
     else:
-        scheme.ctxt = __hw5_1aPRGReal
+        scheme.query = __hw5_1aPRGReal
 
     result = attack(size, scheme)
 
@@ -424,9 +424,9 @@ def hw5_1bPrgDistinguish(size, attack):
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = __hw5_1bPRGRand
+        scheme.query = __hw5_1bPRGRand
     else:
-        scheme.ctxt = __hw5_1bPRGReal
+        scheme.query = __hw5_1bPRGReal
 
     result = attack(size, scheme)
 
@@ -469,9 +469,9 @@ def hw5_1cPrgDistinguish(size, attack):
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = __hw5_1cPRGRand
+        scheme.query = __hw5_1cPRGRand
     else:
-        scheme.ctxt = __hw5_1cPRGReal
+        scheme.query = __hw5_1cPRGReal
 
     result = attack(size, scheme)
 
@@ -516,9 +516,9 @@ def hw6_1PrfDistinguish(size, attack):
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = __hw6_1LOOKUPrand
+        scheme.lookup = __hw6_1LOOKUPrand
     else:
-        scheme.ctxt = __hw6_1LOOKUPreal
+        scheme.lookup = __hw6_1LOOKUPreal
 
     k = Bytes(L_SIZE)
     k.rand()
@@ -573,9 +573,9 @@ def hw6_2PrpDistinguish(size, attack):
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = __hw6_2LOOKUPrand
+        scheme.lookup = __hw6_2LOOKUPrand
     else:
-        scheme.ctxt = __hw6_2LOOKUPreal
+        scheme.lookup = __hw6_2LOOKUPreal
 
     k = Bytes(L_SIZE)
     k.rand()

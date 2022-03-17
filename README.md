@@ -219,6 +219,8 @@ for distinguishing the actual libraries. The guesses are:
 
 # Perl
 
+A necessary package for this to work is Crypt::Random, so be sure to install that before using this package
+
 Data is passed to subroutines as a list of bytes casted to characters. For
 example a message of all zeros of length lambda could be written as:
 
