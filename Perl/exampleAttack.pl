@@ -14,7 +14,6 @@ sub exampleAttack {
     # Generate ciphertext
     my $c = $scheme->{CTXT}->($m);
 
-    $scheme
     # if ciphertext and message are the same, we can distinguish real from rand
     if ($c eq $m){
         return "real";

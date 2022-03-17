@@ -19,7 +19,7 @@ sub KeyGen {
     my $lambda = shift;
     my $k = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $k .= makerandom(Size => 1, Strength => 0);
+        $k .= makerandom(Size => 8, Strength => 0);
     }
     return $k;
 }
@@ -205,7 +205,7 @@ sub se2_3OtsDistinguish {
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 0x1){
         $scheme{'EAVESDROP'} = \&se2_3EAVESDROPL;
     }
@@ -231,9 +231,6 @@ sub se2_3OtsDistinguish {
     if (!($choice & 0x2) && ($result eq "real")){
         return 1;
     }
-    print "Failed to distinguish\n";
-    print "Choice: 0x", printbinary($choice), "\n";
-    print "Result: ", $result, "\n";
     return 0;
 }
 
@@ -294,7 +291,7 @@ sub hw2_1OtsDistinguish {
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'EAVESDROP'} = \&hw2_1EAVESDROPL;
     }
@@ -314,7 +311,7 @@ sub hw2_1OtsDistinguish {
     if (!($choice & 1) && ($result eq "right")){
         return 1;
     }
-    if ((($choice & 2) == 2) && ($result eq "random")){
+    if ((($choice & 2)) && ($result eq "random")){
         return 1;
     }
     if (!($choice & 2) && ($result eq "real")){
@@ -356,7 +353,7 @@ sub hw5_1aPRGrand{
     my $s = shift;
     my $x = "";
     for (my $i = 0; $i < 6 * length($s); $i++) {
-        $x .= chr(makerandom(Size => 1, Strength => 0));
+        $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;
 }
@@ -368,7 +365,7 @@ sub hw5_1aPrgDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1aPRGrand;
     }
@@ -405,7 +402,7 @@ sub hw5_1bPRGrand{
     my $s = shift;
     my $x = "";
     for (my $i = 0; $i < 3 * length($s); $i++) {
-        $x .= chr(makerandom(Size => 1, Strength => 0));
+        $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;
 }
@@ -417,7 +414,7 @@ sub hw5_1bPrgDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1bPRGrand;
     }
@@ -451,7 +448,7 @@ sub hw5_1cPRGrand{
     my $s = shift;
     my $x = "";
     for (my $i = 0; $i < 6 * length($s); $i++) {
-        $x .= chr(makerandom(Size => 1, Strength => 0));
+        $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;
 }
@@ -463,7 +460,7 @@ sub hw5_1cPrcDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1cPRGrand;
     }
@@ -514,7 +511,7 @@ sub hw6_1LOOKUPrand{
     else{
         my $x = "";
         for (my $i = 0; $i < length($m); $i++) {
-            $x .= chr(makerandom(Size => 1, Strength => 0));
+            $x .= chr(makerandom(Size => 8, Strength => 0));
         }
         $hw6_1GLOBAL_T{$m} = $x;
         return $x;
@@ -528,7 +525,7 @@ sub hw6_1PrfDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'LOOKUP'} = \&hw6_1LOOKUPrand;
     }
@@ -537,7 +534,7 @@ sub hw6_1PrfDistinguish{
     }
     $hw6_1GLOBAL_K = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $hw6_1GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+        $hw6_1GLOBAL_K .= chr(makerandom(Size => 8, Strength => 0));
     }
     my $result = $attack->($lambda, \%scheme);
     if ((($choice & 1) == 1) && ($result eq "random")){
@@ -587,7 +584,7 @@ sub hw6_2LOOKUPrand{
     else{
         my $x = "";
         for (my $i = 0; $i < length($m); $i++) {
-            $x .= chr(makerandom(Size => 1, Strength => 0));
+            $x .= chr(makerandom(Size => 8, Strength => 0));
         }
         $hw6_2GLOBAL_T{$m} = $x;
         return $x;
@@ -602,7 +599,7 @@ sub hw6_2PrpDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'LOOKUP'} = \&hw6_2LOOKUPrand;
     }
@@ -611,7 +608,7 @@ sub hw6_2PrpDistinguish{
     }
     $hw6_2GLOBAL_K = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $hw6_2GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+        $hw6_2GLOBAL_K .= chr(makerandom(Size => 8, Strength => 0));
     }
     my $result = $attack->($lambda, \%scheme);
     if ((($choice & 1) == 1) && ($result eq "random")){
@@ -638,7 +635,7 @@ sub hw7_2CpaEnc{
     my $m = shift;
     my $s1 = "";
     for (my $i = 0; $i < length($m); $i++) {
-        $s1 .= chr(makerandom(Size => 1, Strength => 0));
+        $s1 .= chr(makerandom(Size => 8, Strength => 0));
     }
     my $s2 = "";
     for (my $i = 0; $i < length($m); $i++) {
@@ -685,7 +682,7 @@ sub hw7_2CpaDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = makerandom(Size => 1, Strength => 0);
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'EAVESDROP'} = \&hw7_2EAVESDROPL;
     }
