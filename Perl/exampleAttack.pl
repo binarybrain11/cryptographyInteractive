@@ -3,21 +3,18 @@
 use strict;
 use warnings;
 use lib ".";
-use cryptointeractive;
-
-sub printbytes {
-    my $bytes = shift;
-    my $i;
-    for ($i = 0; $i < length($bytes); $i++) {
-        printf("%08b", ord(substr($bytes, $i, 1)));
-    }
-}
+use CryptoInteractive;
 
 sub exampleAttack {
     my ($lambda, $scheme) = @_;
+
+    # Message is a string of zero bytes of length $lambda
     my $m = "\0" x $lambda;
+
+    # Generate ciphertext
     my $c = $scheme->{CTXT}->($m);
 
+    # if ciphertext and message are the same, we can distinguish real from rand
     if ($c eq $m){
         return "real";
     }
