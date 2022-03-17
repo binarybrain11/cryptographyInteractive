@@ -143,19 +143,21 @@ organized by most significant bits to least significant. For example, suppose
 the output of a function is stored into c, but the return says (x,y).
 We can access x and y by doing pointer arithmetic on c:
 
+```
 char* c = exampleFunction();
 char* x = c + lambda;
-char\* y = c;
+char* y = c;
+```
 
 x stores the bytes that occur after lambda bytes while y stores the lambda
 least significant bytes. The same would be true if a function returns x||y.
 
 The attacking function will return a single character to indicated its guess
-for distinguishing the actual libraries. The guesses are:
-'L' for the Left library in a left vs right attack
-'R' for the Right library in a left vs right attack
-'$' for the random library in a real vs random attack
-'r' for the real library in a real vs random attack
+for distinguishing the actual libraries. The guesses are:  
+'L' for the Left library in a left vs right attack  
+'R' for the Right library in a left vs right attack  
+'$' for the random library in a real vs random attack  
+'r' for the real library in a real vs random attack  
 Every time the scheme's attack function is called to run your attacking
 function, it will randomly select which library to give your attacking
 function and put that implementation in the Scheme.
@@ -179,3 +181,19 @@ This function performs or on a and b and puts the result in res.
 int isEqual(char* res, char* a, char* b);
 This function checks whether the first lambda bytes pointed to by a and b are
 equal. Returns 1 if they are, 0 if they aren't.
+
+# Python
+
+### Bits class
+
+The python implementation uses a class to abstract away binary strings.  
+The class takes 1 argument for size i.e. exampleBits = Bits(size)
+To set the bits to a specific value you can use the Bits.set() method.
+The set method takes an int argument. 0 or 1 will set the entire string to 0's or 1's. Any other integer will set the bits to the binary representation of the number.
+
+The attacking function will return a string to indicated its guess
+for distinguishing the actual libraries. The guesses are:  
+'left' for the Left library in a left vs right attack  
+'right' for the Right library in a left vs right attack  
+'random' for the random library in a real vs random attack  
+'real' for the real library in a real vs random attack
