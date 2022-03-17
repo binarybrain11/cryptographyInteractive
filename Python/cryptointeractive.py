@@ -7,12 +7,34 @@ L_SIZE = 4
 __KEY = None
 __T = {}
 
+########################### Primitives ###########################
 
-class Bits:
+
+class Bytes:
+
+    '''
+    Creates an object to represent binary.
+
+            Parameters:
+                    size (int): Sets the size in bytes
+
+            Returns:
+                    object (Bytes): Bits object to represent binary
+    '''
+
     def __init__(self, size):
         self.size = size
 
     def set(self, value):
+        '''
+        Set the bits value. 
+
+            0 - sets all bits to 0  
+
+            1 - sets all bits to 1  
+
+            Any other int - sets bits to int
+        '''
         if value == 1:
             self.bits = int.to_bytes(
                 pow(2, self.size*8) - 1, self.size, sys.byteorder)
@@ -27,6 +49,9 @@ class Bits:
         return self
 
     def rand(self):
+        '''
+            Randomizes bits
+        '''
         self.bits = (secrets.randbits(self.size*8)
                      ).to_bytes(self.size, sys.byteorder)
 
@@ -43,7 +68,7 @@ class Bits:
             raise TypeError("Cannot AND variable length bits")
         self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
         other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
-        result = Bits(self.size)
+        result = Bytes(self.size)
         result.bits = (self_int & other_int).to_bytes(xLen, sys.byteorder)
         return result
 
@@ -54,7 +79,7 @@ class Bits:
             raise TypeError("Cannot OR variable length bits")
         self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
         other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
-        result = Bits(self.size)
+        result = Bytes(self.size)
         result.bits = (self_int | other_int).to_bytes(xLen, sys.byteorder)
         return result
 
@@ -65,12 +90,12 @@ class Bits:
             raise TypeError("Cannot XOR variable length bits")
         self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
         other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
-        result = Bits(self.size)
+        result = Bytes(self.size)
         result.bits = (self_int ^ other_int).to_bytes(xLen, sys.byteorder)
         return result
 
     def __add__(self, other):
-        retBits = Bits(len(self.bits) + len(other.bits))
+        retBits = Bytes(len(self.bits) + len(other.bits))
         retBits.bits = other.bits + self.bits
         return retBits
 
@@ -104,9 +129,9 @@ def keyGen(size):
 
 def prf(k, m):
     print('prf')
-    v = Bits(len(k))
+    v = Bytes(len(k))
     v.bits = k.bits
-    output = Bits(2 * len(k))
+    output = Bytes(2 * len(k))
     for bit in str(m):
         if bit == '0':
             output = prgDouble(v)
@@ -121,14 +146,14 @@ def prf(k, m):
 def prgDouble(s):
     random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
     x = random.randint(0, pow(2, 2 * len(s)*8))
-    y = Bits(2*len(s))
+    y = Bytes(2*len(s))
     y.set(x)
     return y
 
 
 def prp(k, v):
-    v0 = Bits(len(v)/2)
-    v1 = Bits(len(v)/2)
+    v0 = Bytes(len(v)/2)
+    v1 = Bytes(len(v)/2)
     v0.bits = v.bits[0:(len(v)//2)]
     v1.bits = v.bits[(len(v)//2): len(v)]
     out = prf(k[0], v1)
@@ -138,6 +163,14 @@ def prp(k, v):
     out3 = prf(k[2], v3)
     v4 = out3 ^ v2
     return v3+v4
+
+
+def advantage(trials, attack, distinguisher):
+    advantage = 0
+    for i in range(0, trials):
+        advantage += distinguisher(2, attack)
+    return advantage/trials
+
 ########################### Chapter 2 ###########################
 
 
@@ -153,8 +186,9 @@ def se2_3EAVESDROPR(size, mL, mR):
     return c
 
 
-def se2_3OtsAttack(size, attack):
+def se2_3OtsDistinguish(size, attack):
     """
+    Chapter 2 section 3 example - Implements CTXT() and EAVESDROP() 
     """
     scheme = Scheme()
     eavesChoice = secrets.choice([0, 1])
@@ -166,9 +200,9 @@ def se2_3OtsAttack(size, attack):
         scheme.eavesdrop = se2_3EAVESDROPR
 
     if ctxtChoice:
-        scheme.ctxt = se2_3CTXTrand
+        scheme.ctxt = __se2_3CTXTrand
     else:
-        scheme.ctxt = se2_3CTXTreal
+        scheme.ctxt = __se2_3CTXTreal
 
     result = attack(size, scheme)
 
@@ -192,85 +226,84 @@ def __se2_3Enc(k, m):
     mLen = len(m)
     if kLen != mLen:
         return "AWW HELL NO"
-
-    k_val = int.from_bytes(k, sys.byteorder, signed=False)
-    m_val = int.from_bytes(m, sys.byteorder, signed=False)
-    cipher = k_val & m_val
-    return cipher.to_bytes(kLen, sys.byteorder)
+    c = k & m
+    return c
 
 
-def se2_3CTXTreal(m):
-    k = keyGen(len(m))
+def __se2_3CTXTreal(m):
+    k = Bytes(len(m))
+    k.bits = keyGen(len(m))
     c = __se2_3Enc(k, m)
     return c
 
 
-def se2_3CTXTrand(m):
-    c = randBytes(len(m))
+def __se2_3CTXTrand(m):
+    c = Bytes(len(m))
+    c.rand()
     return c
 
 
 def otpEnc(k, m):
     return k ^ m
 
-# Check
-
 
 def se2_30tsAdvantage(trials, attack):
     advantage = 0
-    for trial in trials:
-        advantage += se2_3OtsAttack(attack)
+    for i in range(0, trials):
+        advantage += se2_3OtsDistinguish(2, attack)
     return advantage/trials
 
 
-def hw2_1KeyGen():
-    k = Bits(L_SIZE)
+def __hw2_1KeyGen():
+    k = Bytes(L_SIZE)
     k.rand()
-    d = Bits(L_SIZE)
+    d = Bytes(L_SIZE)
     d.set(0)
     while k == d:
         k.rand()
     return k
 
 
-def hw2_1EAVESDROPL(mL, mR):
-    k = hw2_1KeyGen()
+def __hw2_1EAVESDROPL(mL, mR):
+    k = __hw2_1KeyGen()
     c = k ^ mL
     return c
 
 
-def hw2_1EAVESDROPR(mL, mR):
-    k = hw2_1KeyGen()
+def __hw2_1EAVESDROPR(mL, mR):
+    k = __hw2_1KeyGen()
     c = k ^ mR
     return c
 
 
-def hw2_1CTXTreal(m):
-    k = hw2_1KeyGen()
+def __hw2_1CTXTreal(m):
+    k = __hw2_1KeyGen()
     c = k ^ m
     return c
 
 
-def hw2_1CTXTrandom(m):
-    c = Bits(L_SIZE)
+def __hw2_1CTXTrandom(m):
+    c = Bytes(L_SIZE)
     c.rand()
     return c
 
 
-def hw2_1OtsAttack(size, attack):
-
+def hw2_1OtsDistinguish(size, attack):
+    '''
+        Chapter 2 Homework Problem 1 - Implements CTXT() and EAVESDROP() 
+    '''
     scheme = Scheme()
     eavesChoice = secrets.choice([0, 1])
     ctxtChoice = secrets.choice([0, 1])
     if eavesChoice:
-        scheme.eavesdrop = hw2_1EAVESDROPL
+        scheme.eavesdrop = __hw2_1EAVESDROPL
     else:
-        scheme.eavesdrop = hw2_1EAVESDROPR
+        scheme.eavesdrop = __hw2_1EAVESDROPR
 
     if ctxtChoice:
-        scheme.ctxt = se2_3CTXTrand
+        scheme.ctxt = __hw2_1CTXTrandom
     else:
-        scheme.ctxt = se2_3CTXTreal
+        scheme.ctxt = __hw2_1CTXTreal
 
     result = attack(size, scheme)
 
@@ -294,8 +327,8 @@ def hw2_1OtsAttack(size, attack):
 
 def hw2_1OtsAdvantage(trials, attack):
     advantage = 0
-    for trial in trials:
-        advantage += hw2_1OtsAttack(attack)
+    for i in range(0, trials):
+        advantage += hw2_1OtsDistinguish(L_SIZE, attack)
     return advantage/trials
 
 
@@ -307,36 +340,46 @@ def hw2_1OtsAdvantage(trials, attack):
 
 
 def hw5_1G(s):
+    '''
+    Chapter 5 Homework Problem 1 
+        *secure* length tripling PRG. Not actually secure, but treat it as such. 
+
+        Parameters:
+            s - seed with at least lambda bytes
+
+        Returns: Bytes(3 L_SIZE)
+    '''
     random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
-    # @follow-up why not use randbits here (says zach)
     x = random.randint(0, pow(2, 3 * L_SIZE*8))
-    b = Bits(3 * L_SIZE)
+    b = Bytes(3 * L_SIZE)
     b.set(x)
     return b
 
 
-def hw5_1aPRGReal(s):
+def __hw5_1aPRGReal(s):
     x = hw5_1G(s)
-    b = Bits(L_SIZE)
+    b = Bytes(L_SIZE)
     b.set(0)
     y = hw5_1G(b)
     return (x + y)
 
 
-def hw5_1aPRGRand(s):
-    x = Bits(6*L_SIZE)
+def __hw5_1aPRGRand(s):
+    x = Bytes(6*L_SIZE)
     x.rand()
     return x
 
 
-def hw5_1aAttack(size, attack):
-
+def hw5_1aPrgDistinguish(size, attack):
+    '''
+        Chapter 5 Homework Problem 1a - Implements QUERY() 
+    '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = hw5_1aPRGRand
+        scheme.ctxt = __hw5_1aPRGRand
     else:
-        scheme.ctxt = hw5_1aPRGReal
+        scheme.ctxt = __hw5_1aPRGReal
 
     result = attack(size, scheme)
 
@@ -351,33 +394,35 @@ def hw5_1aAttack(size, attack):
 
 def hw5_1aPrgAdvantage(trials, attack):
     advantage = 0
-    for trial in trials:
-        advantage += hw5_1aAttack(attack)
+    for i in range(0, trials):
+        advantage += hw5_1aPrgDistinguish(L_SIZE, attack)
     return advantage/trials
 
 
-def hw5_1bPRGReal(s):
+def __hw5_1bPRGReal(s):
     x = hw5_1G(s)
-    b = Bits(L_SIZE)
+    b = Bytes(L_SIZE)
     b.set(0)
     y = hw5_1G(b)
     return (x ^ y)
 
 
-def hw5_1bPRGRand(s):
-    x = Bits(6*L_SIZE)
+def __hw5_1bPRGRand(s):
+    x = Bytes(6*L_SIZE)
     x.rand()
     return x
 
 
-def hw5_1bAttack(size, attack):
-
+def hw5_1bPrgDistinguish(size, attack):
+    '''
+        Chapter 5 Homework Problem 1b - Implements QUERY() 
+    '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = hw5_1bPRGRand
+        scheme.ctxt = __hw5_1bPRGRand
     else:
-        scheme.ctxt = hw5_1bPRGReal
+        scheme.ctxt = __hw5_1bPRGReal
 
     result = attack(size, scheme)
 
@@ -392,33 +437,35 @@ def hw5_1bAttack(size, attack):
 
 def hw5_1bPrgAdvantage(trials, attack):
     advantage = 0
-    for trial in trials:
-        advantage += hw5_1bAttack(attack)
+    for i in range(0, trials):
+        advantage += hw5_1aPrgDistinguish(L_SIZE, attack)
     return advantage/trials
 
 
-def hw5_1cPRGReal(s):
+def __hw5_1cPRGReal(s):
     x = hw5_1G(s)
-    temp = Bits(L_SIZE)
+    temp = Bytes(L_SIZE)
     temp.bits = x.bits[2*L_SIZE:3*L_SIZE]
     y = hw5_1G(temp)
     return (x + y)
 
 
-def hw5_1cPRGRand(s):
-    x = Bits(6*L_SIZE)
+def __hw5_1cPRGRand(s):
+    x = Bytes(6*L_SIZE)
     x.rand()
     return x
 
 
-def hw5_1cAttack(size, attack):
-
+def hw5_1cPrgDistinguish(size, attack):
+    '''
+        Chapter 5 Homework Problem 1c - Implements QUERY() 
+    '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = hw5_1cPRGRand
+        scheme.ctxt = __hw5_1cPRGRand
     else:
-        scheme.ctxt = hw5_1cPRGReal
+        scheme.ctxt = __hw5_1cPRGReal
 
     result = attack(size, scheme)
 
@@ -433,39 +480,41 @@ def hw5_1cAttack(size, attack):
 
 def hw5_1cPrgAdvantage(trials, attack):
     advantage = 0
-    for trial in trials:
-        advantage += hw5_1bAttack(attack)
+    for i in range(0, trials):
+        advantage += hw5_1bPrgDistinguish(L_SIZE, attack)
     return advantage/trials
 
 
 ########################### Chapter 6 ###########################
 
-def hw6_1Prf(k, m):
+def __hw6_1Prf(k, m):
     return prf(k, m) + prf(k, prf(k, m))
 
 
-def hw6_1LOOKUPreal(x):
-    return hw6_1Prf(__KEY, x)
+def __hw6_1LOOKUPreal(x):
+    return __hw6_1Prf(__KEY, x)
 
 
-def hw6_1LOOKUPrand(x):
+def __hw6_1LOOKUPrand(x):
     if __T.get(x) == None:
-        bits = Bits(L_SIZE)
+        bits = Bytes(L_SIZE)
         bits.rand()
         __T[x] = bits
     return __T[x]
 
 
-def hw6_1PrfAttack(size, attack):
-
+def hw6_1PrfDistinguish(size, attack):
+    '''
+        Chapter 6 Homework Problem 1 - Implements LOOKUP() 
+    '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = hw6_1LOOKUPrand
+        scheme.ctxt = __hw6_1LOOKUPrand
     else:
-        scheme.ctxt = hw6_1LOOKUPreal
+        scheme.ctxt = __hw6_1LOOKUPreal
 
-    k = Bits(L_SIZE)
+    k = Bytes(L_SIZE)
     k.rand()
     __KEY = k
     result = attack(size, scheme)
@@ -481,14 +530,14 @@ def hw6_1PrfAttack(size, attack):
 
 def hw6_1PrfAdvantage(trials, attack):
     advantage = 0
-    for trial in trials:
-        advantage += hw6_1PrfAttack(attack)
+    for i in range(0, trials):
+        advantage += hw6_1PrfDistinguish(L_SIZE, attack)
     return advantage/trials
 
 
-def hw6_2Prf(k, v):
-    v0 = Bits(len(v)/2)
-    v1 = Bits(len(v)/2)
+def __hw6_2Prp(k, v):
+    v0 = Bytes(len(v)/2)
+    v1 = Bytes(len(v)/2)
     v0.bits = v.bits[0:(len(v)//2)]
     v1.bits = v.bits[(len(v)//2): len(v)]
     out = prf(k[0], v1)
@@ -498,28 +547,31 @@ def hw6_2Prf(k, v):
     return v2+v3
 
 
-def hw6_2LOOKUPreal(x):
-    return hw6_2Prf(__KEY, x)
+def __hw6_2LOOKUPreal(x):
+    return __hw6_2Prp(__KEY, x)
 
 
-def hw6_2LOOKUPrand(x):
+def __hw6_2LOOKUPrand(x):
     if __T.get(x) == None:
-        bits = Bits(L_SIZE)
+        bits = Bytes(L_SIZE)
         bits.rand()
         __T[x] = bits
     return __T[x]
 
 
-def hw6_2PrfAttack(size, attack):
-
+def hw6_2PrpDistinguish(size, attack):
+    """
+    Chapter 6 Homework Problem 2 - Implements LOOKUP() 
+        * Lamdbda must be an even value
+    """
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
     if ctxtChoice:
-        scheme.ctxt = hw6_2LOOKUPrand
+        scheme.ctxt = __hw6_2LOOKUPrand
     else:
-        scheme.ctxt = hw6_2LOOKUPreal
+        scheme.ctxt = __hw6_2LOOKUPreal
 
-    k = Bits(L_SIZE)
+    k = Bytes(L_SIZE)
     k.rand()
     __KEY = k
     result = attack(size, scheme)
@@ -534,19 +586,9 @@ def hw6_2PrfAttack(size, attack):
 
 ########################### Chapter 7 ###########################
 
-# k needs to be an array
-# What is going on in the c code?
 
-
-def hw7_1cpaEnc(k, m):
-    r = Bits(L_SIZE)
-    r.rand()
-    c = prp(k, m + r)
-    return c
-
-
-def hw7_2cpaEnc(k, m):
-    s1 = Bits(L_SIZE)
+def __hw7_2cpaEnc(k, m):
+    s1 = Bytes(L_SIZE)
     s1.rand()
     s2 = s1 + m
     x = prp(k, s1)
@@ -554,50 +596,54 @@ def hw7_2cpaEnc(k, m):
     return x+y
 
 
-def hw7_2EAVESDROPL(mL, mR):
+def __hw7_2EAVESDROPL(mL, mR):
     key = keyGen(3*L_SIZE)
-    k = Bits(3*L_SIZE)
+    k = Bytes(3*L_SIZE)
     k.bits = key
-    return hw7_2cpaEnc(k, mL)
+    return __hw7_2cpaEnc(k, mL)
 
 
-def hw7_2EAVESDROPR(mL, mR):
+def __hw7_2EAVESDROPR(mL, mR):
     key = keyGen(3*L_SIZE)
-    k = Bits(3*L_SIZE)
+    k = Bytes(3*L_SIZE)
     k.bits = key
-    return hw7_2cpaEnc(k, mR)
+    return __hw7_2cpaEnc(k, mR)
 
 
-def hw7_2CTXTreal(m):
+def __hw7_2CTXTreal(m):
     key = keyGen(3*L_SIZE)
-    k = Bits(3*L_SIZE)
+    k = Bytes(3*L_SIZE)
     k.bits = key
-    return hw7_2cpaEnc(k, m)
+    return __hw7_2cpaEnc(k, m)
 
 
-def hw7_2CTXTrand(m):
+def __hw7_2CTXTrand(m):
     key = keyGen(len(m))
-    c = Bits(len(m))
+    c = Bytes(len(m))
     c.bits = key
     return c
 
 
 def hw7_2CpaDistinguish(size, attack):
     """
+    Chapter 7 Homeowrk Problem 2
+        Implements CTXT() and EAVESDROP()
+        The output (x,y) is concatenated with x as the most significant bits
+        * Lamdbda must be an even value
     """
     scheme = Scheme()
     eavesChoice = secrets.choice([0, 1])
     ctxtChoice = secrets.choice([0, 1])
 
     if eavesChoice:
-        scheme.eavesdrop = hw7_2EAVESDROPL
+        scheme.eavesdrop = __hw7_2EAVESDROPL
     else:
-        scheme.eavesdrop = hw7_2EAVESDROPR
+        scheme.eavesdrop = __hw7_2EAVESDROPR
 
     if ctxtChoice:
-        scheme.ctxt = hw7_2CTXTrand
+        scheme.ctxt = __hw7_2CTXTrand
     else:
-        scheme.ctxt = hw7_2CTXTreal
+        scheme.ctxt = __hw7_2CTXTreal
 
     result = attack(size, scheme)
 
@@ -614,3 +660,10 @@ def hw7_2CpaDistinguish(size, attack):
         return True
 
     return False
+
+
+def hw7_2PrfAdvantage(trials, attack):
+    advantage = 0
+    for i in range(0, trials):
+        advantage += hw6_1PrfDistinguish(L_SIZE, attack)
+    return advantage/trials

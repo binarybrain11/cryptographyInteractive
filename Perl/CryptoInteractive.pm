@@ -1,4 +1,4 @@
-package cryptointeractive;
+package CryptoInteractive;
 
 use strict;
 use warnings;
@@ -6,21 +6,28 @@ use Exporter;
 use Crypt::Random qw(makerandom);
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw( se2_3OtsDistinguish hw2_1OtsDistinguish hw5_1aPrgDistinguish hw5_1bPrgDistinguish hw5_1cPrcDistinguish hw6_1PrfDistinguish hw6_2PrfDistinguish Advantage );
+our @EXPORT = qw( se2_3OtsDistinguish hw2_1OtsDistinguish hw5_1aPrgDistinguish
+hw5_1bPrgDistinguish hw5_1cPrcDistinguish hw6_1PrfDistinguish
+hw6_2PrpDistinguish hw7_2CpaDistinguish Advantage );
 
 ###############################################################################
 # Primitives
 ###############################################################################
 
+# Generate a random key of byte length $lambda
 sub KeyGen {
     my $lambda = shift;
     my $k = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $k .= chr(int(rand(256)));
+        $k .= makerandom(Size => 8, Strength => 0);
     }
     return $k;
 }
 
+# Performs deterministic OTP encrytpion on the message with the key.
+# - k must be at least lambda bytes long
+# - m must be at least lambda bytes long
+# - returns a ciphertext that is lambda bytes long
 sub otpDetEnc{
     my $k = shift;
     my $m = shift;
@@ -31,6 +38,9 @@ sub otpDetEnc{
     return $c;
 }
 
+# A length doubling PRG
+# - Outputs a random string of bytes of lengeth 2 * $s
+# - $s is the seed for the random number generator
 sub prgDouble{
     my $s = shift;
     srand($s);
@@ -41,6 +51,8 @@ sub prgDouble{
     return $out;
 }
 
+# A PRF using the above length doubling PRG
+# - from Construction 6.4 in the textbook
 sub prf{
     my $k = shift;
     my $m = shift;
@@ -59,20 +71,66 @@ sub prf{
     return $output;
 }
 
+# A PRP made using 3 round feistel
+sub prp{
+    my $k = shift;
+    my $m = shift;
+    my $k1 = substr($k, 0, length($k) / 3);
+    my $k2 = substr($k, length($k) / 3, length($k) / 3);
+    my $k3 = substr($k, 2 * length($k) / 3, length($k) / 3);
+
+    my $v0 = substr($m, 0, length($m) / 2);
+    my $v1 = substr($m, length($m) / 2, length($m) / 2);
+    my $v2 = "";
+    my $v3 = "";
+    my $v4 = "";
+    my $tmp = prf($k1, $v1);
+    for (my $i = 0; $i < length($v0); $i++) {
+        $v2 .= chr(ord(substr($v0, $i, 1)) ^ ord(substr($tmp, $i, 1)));
+    }
+    $tmp = prf($k2, $v2);
+    for (my $i = 0; $i < length($v1); $i++) {
+        $v3 .= chr(ord(substr($v1, $i, 1)) ^ ord(substr($tmp, $i, 1)));
+    }
+    $tmp = prf($k3, $v3);
+    for (my $i = 0; $i < length($v2); $i++) {
+        $v4 .= chr(ord(substr($v2, $i, 1)) ^ ord(substr($tmp, $i, 1)));
+    }
+    return $v3 . $v4;
+}
+
 
 ###############################################################################
 # Helper functions
 ###############################################################################
 
+# Returns a string with the values of each byte of the input string in hex
 sub printbytes {
     my $bytes = shift;
     my $str = "";
     for (my $i = 0; $i < length($bytes); $i++) {
-        $str .= sprintf("%02x", ord(substr($bytes, $i, 1)));
+        $str .= sprintf("%X", ord(substr($bytes, $i, 1)));
     }
     return $str;
 }
 
+# Returns a string with the values of each byte of the input string in binary
+sub printbinary {
+    my $bytes = shift;
+    my $str = "";
+    for (my $i = 0; $i < length($bytes); $i++) {
+        $str .= sprintf("%08b", ord(substr($bytes, $i, 1)));
+    }
+    return $str;
+}
+
+# Computes the distinguishing advantage of an attacker. 0.5 is unable to distinguish, 
+# 1 is distinguishes correctly every time, 0 distinguishes incorrectly every time
+# - trials is the number of trials to run the attack. The more trials, the more 
+# accurate the advantage
+# - attacker is the user attack function to be called inside of the distinguish
+# - distinguisher is the function representing the problem, e.g. se2_3OtsDistinguish()
+# - returns a float indicating the advantage of the attacker
 sub Advantage{
     my $trials = shift;
     my $lambda = shift;
@@ -96,6 +154,10 @@ sub Advantage{
 # OTS
 ########################################
 
+# One time secrecy (ots) example from Chapter 2 Section 3 of the book 
+# - k lambda bytes key
+# - m lambda bytes message
+# - returns lambda bytes ciphertext
 sub se2_Enc {
     my ($k, $m) = @_;
     my $c = "";
@@ -136,35 +198,37 @@ sub se2_3CTXTrandom{
     return $c;
 }
 
+# Chapter 2 Section 3 example
+# Implements CTXT() and EAVESDROP()
 sub se2_3OtsDistinguish {
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
-    if ($choice & 1){
+    my $choice = makerandom(Size => 8, Strength => 0);
+    if ($choice & 0x1){
         $scheme{'EAVESDROP'} = \&se2_3EAVESDROPL;
     }
     else{
         $scheme{'EAVESDROP'} = \&se2_3EAVESDROPR;
     }
-    if ($choice & 2){
+    if ($choice & 0x2){
         $scheme{'CTXT'} = \&se2_3CTXTrandom;
     }
     else{
         $scheme{'CTXT'} = \&se2_3CTXTreal;
     }
     my $result = $attack->($lambda, \%scheme);
-    if (($choice & 1) && ($result eq "left")){
+    if (($choice & 0x1) && ($result eq "left")){
         return 1;
     }
-    if (!($choice & 1) && ($result eq "right")){
+    if (!($choice & 0x1) && ($result eq "right")){
         return 1;
     }
-    if ((($choice & 2) == 2) && ($result eq "random")){
+    if ((($choice & 0x2)) && ($result eq "random")){
         return 1;
     }
-    if (!($choice & 2) && ($result eq "real")){
+    if (!($choice & 0x2) && ($result eq "real")){
         return 1;
     }
     return 0;
@@ -220,12 +284,14 @@ sub hw2_1CTXTrandom{
     return $c;
 }
 
+# Chapter 2 Homework Problem 1
+# Implements CTXT() and EAVESDROP()
 sub hw2_1OtsDistinguish {
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'EAVESDROP'} = \&hw2_1EAVESDROPL;
     }
@@ -245,7 +311,7 @@ sub hw2_1OtsDistinguish {
     if (!($choice & 1) && ($result eq "right")){
         return 1;
     }
-    if ((($choice & 2) == 2) && ($result eq "random")){
+    if ((($choice & 2)) && ($result eq "random")){
         return 1;
     }
     if (!($choice & 2) && ($result eq "real")){
@@ -258,47 +324,48 @@ sub hw2_1OtsDistinguish {
 # Chapter 5
 ################################################################################
 
+# "Secure" length tripling PRG. Not actually secure, but treat it as such.
+# - s is the seed for the PRG
+# - returns a random number of length 3*len(s)
+sub hw5_1G{
+    my $s = shift;
+    srand($s);
+    my $x = "";
+    for (my $i = 0; $i < 3 * length($s); $i++) {
+        $x .= chr(int(rand(256)));
+    }
+    return $x;
+}
 
 ########################################
 # Homework 5
 # Problem 1 a
 ########################################
 
-sub hw5_1G{
-    my $lambda = shift;
-    my $s = shift;
-    srand($s);
-    my $x = "";
-    for (my $i = 0; $i < 3 * $lambda; $i++) {
-        $x .= chr(int(rand(256)));
-    }
-    return $x;
-}
-
 sub hw5_1aPRGreal{
-    my $lambda = shift;
     my $s = shift;
-    my $x = hw5_1G($lambda, $s);
-    my $y = hw5_1G($lambda, 0);
+    my $x = hw5_1G($s);
+    my $y = hw5_1G("\0" x length($s));
     return $x.$y;
 }
 
 sub hw5_1aPRGrand{
-    my $lambda = shift;
     my $s = shift;
     my $x = "";
-    for (my $i = 0; $i < 6 * $lambda; $i++) {
-        $x .= chr(makerandom(Size => 1, Strength => 0));
+    for (my $i = 0; $i < 6 * length($s); $i++) {
+        $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;
 }
 
+# Chapter 5 Homework Problem 1 a
+# Implements QUERY()
 sub hw5_1aPrgDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1aPRGrand;
     }
@@ -321,33 +388,33 @@ sub hw5_1aPrgDistinguish{
 ########################################
 
 sub hw5_1bPRGreal{
-    my $lambda = shift;
     my $s = shift;
-    my $x = hw5_1G($lambda, $s);
-    my $y = hw5_1G($lambda, 0);
+    my $x = hw5_1G($s);
+    my $y = hw5_1G("\0" x length($s));
     my $z = "";
-    for (my $i = 0; $i < 3 * $lambda; $i++) {
+    for (my $i = 0; $i < 3 * length($s); $i++) {
         $z .= chr(ord(substr($x, $i, 1)) ^ ord(substr($y, $i, 1)));
     }
     return $z;
 }
 
 sub hw5_1bPRGrand{
-    my $lambda = shift;
     my $s = shift;
     my $x = "";
-    for (my $i = 0; $i < 3 * $lambda; $i++) {
-        $x .= chr(makerandom(Size => 1, Strength => 0));
+    for (my $i = 0; $i < 3 * length($s); $i++) {
+        $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;
 }
 
+# Chapter 5 Homework Problem 1 b
+# Implements QUERY()
 sub hw5_1bPrgDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1bPRGrand;
     }
@@ -370,30 +437,30 @@ sub hw5_1bPrgDistinguish{
 ########################################
 
 sub hw5_1cPRGreal{
-    my $lambda = shift;
     my $s = shift;
-    my $combined = hw5_1G($lambda, $s);
-    my $x = substr($combined, 0, $lambda);
-    my $w = hw5_1G($lambda, $x);
+    my $combined = hw5_1G($s);
+    my $x = substr($combined, 0, length($s));
+    my $w = hw5_1G($x);
     return $combined.$w;
 }
 
 sub hw5_1cPRGrand{
-    my $lambda = shift;
     my $s = shift;
     my $x = "";
-    for (my $i = 0; $i < 6 * $lambda; $i++) {
-        $x .= chr(makerandom(Size => 1, Strength => 0));
+    for (my $i = 0; $i < 6 * length($s); $i++) {
+        $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;
 }
 
+# Chapter 5 Homework Problem 1 c
+# Implements QUERY()
 sub hw5_1cPrcDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1cPRGrand;
     }
@@ -444,19 +511,21 @@ sub hw6_1LOOKUPrand{
     else{
         my $x = "";
         for (my $i = 0; $i < length($m); $i++) {
-            $x .= chr(makerandom(Size => 1, Strength => 0));
+            $x .= chr(makerandom(Size => 8, Strength => 0));
         }
         $hw6_1GLOBAL_T{$m} = $x;
         return $x;
     }
 }
 
+# Chapter 6 Homework Problem 1
+# Implements LOOKUP()
 sub hw6_1PrfDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'LOOKUP'} = \&hw6_1LOOKUPrand;
     }
@@ -465,7 +534,7 @@ sub hw6_1PrfDistinguish{
     }
     $hw6_1GLOBAL_K = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $hw6_1GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+        $hw6_1GLOBAL_K .= chr(makerandom(Size => 8, Strength => 0));
     }
     my $result = $attack->($lambda, \%scheme);
     if ((($choice & 1) == 1) && ($result eq "random")){
@@ -485,7 +554,7 @@ sub hw6_1PrfDistinguish{
 our $hw6_2GLOBAL_K;
 our %hw6_2GLOBAL_T;
 
-sub hw6_2Prf{
+sub hw6_2Prp{
     my $k = shift;
     my $m = shift;
     my $x = substr(prf($k, $m), 0, length($m) / 2);
@@ -515,19 +584,22 @@ sub hw6_2LOOKUPrand{
     else{
         my $x = "";
         for (my $i = 0; $i < length($m); $i++) {
-            $x .= chr(makerandom(Size => 1, Strength => 0));
+            $x .= chr(makerandom(Size => 8, Strength => 0));
         }
         $hw6_2GLOBAL_T{$m} = $x;
         return $x;
     }
 }
 
-sub hw6_2PrfDistinguish{
+# Chapter 6 Homework Problem 2
+# Implements LOOKUP()
+# Note: lambda must be an even number for this implementation to work
+sub hw6_2PrpDistinguish{
     my $lambda = shift;
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 8, Strength => 0);
     if ($choice & 1){
         $scheme{'LOOKUP'} = \&hw6_2LOOKUPrand;
     }
@@ -536,7 +608,7 @@ sub hw6_2PrfDistinguish{
     }
     $hw6_2GLOBAL_K = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $hw6_2GLOBAL_K .= chr(makerandom(Size => 1, Strength => 0));
+        $hw6_2GLOBAL_K .= chr(makerandom(Size => 8, Strength => 0));
     }
     my $result = $attack->($lambda, \%scheme);
     if ((($choice & 1) == 1) && ($result eq "random")){
@@ -547,7 +619,6 @@ sub hw6_2PrfDistinguish{
     }
     return 0;
 }
-1;
 
 ################################################################################
 # Chapter 7
@@ -562,4 +633,83 @@ sub hw6_2PrfDistinguish{
 sub hw7_2CpaEnc{
     my $k = shift;
     my $m = shift;
+    my $s1 = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $s1 .= chr(makerandom(Size => 8, Strength => 0));
+    }
+    my $s2 = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $s2 .= chr(ord(substr($s1, $i, 1)) ^ ord(substr($m, $i, 1)));
+    }
+    my $x = prp($k, $s1);
+    my $y = prp($k, $s2);
+    return $x . $y;
 }
+
+sub hw7_2EAVESDROPL{
+    my $ml = shift;
+    my $mr = shift;
+    my $k = KeyGen(3 * length($ml) / 2);
+    my $c = hw7_2CpaEnc($k, $ml);
+    return $c;
+}
+
+sub hw7_2EAVESDROPR{
+    my $ml = shift;
+    my $mr = shift;
+    my $k = KeyGen(3 * length($ml) / 2);
+    my $c = hw7_2CpaEnc($k, $mr);
+    return $c;
+}
+
+sub hw7_2CTXTreal{
+    my $m = shift;
+    my $k = KeyGen(3 * length($m) / 2);
+    my $c = hw7_2CpaEnc($k, $m);
+    return $c;
+}
+
+sub hw7_2CTXTrand{
+    my $m = shift;
+    my $c = KeyGen(length($m));
+    return $c;
+}
+
+# Chapter 7 Homeowrk Problem 2
+# Implements CTXT() and EAVESDROP() 
+sub hw7_2CpaDistinguish{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = makerandom(Size => 8, Strength => 0);
+    if ($choice & 1){
+        $scheme{'EAVESDROP'} = \&hw7_2EAVESDROPL;
+    }
+    else{
+        $scheme{'EAVESDROP'} = \&hw7_2EAVESDROPR;
+    }
+    if ($choice & 2){
+        $scheme{'CTXT'} = \&hw7_2CTXTrand;
+    }
+    else{
+        $scheme{'CTXT'} = \&hw7_2CTXTreal;
+    }
+
+    my $result = $attack->($lambda, \%scheme);
+
+    if ((($choice & 1)) && ($result eq "left")){
+        return 1;
+    }
+    if (!($choice & 1) && ($result eq "right")){
+        return 1;
+    }
+    if ((($choice & 2)) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 2) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
+}
+1;
