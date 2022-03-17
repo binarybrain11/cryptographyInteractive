@@ -221,7 +221,11 @@ example a message of all zeros of length lambda could be written as:
 ### Attack Function
 
 The attacking function will be passed two arguments: lambda and scheme.
-These can be captured with the line `my ($lambda, $scheme) = @_;`
+These can be captured with the line  
+
+    my ($lambda, $scheme) = @_;
+    
+#### Scheme
 
 `$scheme` is a hash that contains the relevant subroutines for the problem you
 are working on. The following keys will return subroutines, if they exist for the problem:  
@@ -231,6 +235,7 @@ are working on. The following keys will return subroutines, if they exist for th
     $scheme->{QUERY}  
     $scheme->{LOOKUP}  
 
+#### Return value
 The attacking function will return a string to indicated its guess
 for distinguishing the actual libraries. The guesses are:  
 'left' for the Left library in a left vs right attack  
