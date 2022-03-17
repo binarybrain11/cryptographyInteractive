@@ -3,7 +3,7 @@ import secrets
 import sys
 from datetime import timezone
 
-L_SIZE = 4
+L_SIZE = 1
 __KEY = None
 __T = {}
 
@@ -128,7 +128,6 @@ def keyGen(size):
 
 
 def prf(k, m):
-    print('prf')
     v = Bytes(len(k))
     v.bits = k.bits
     output = Bytes(2 * len(k))
@@ -139,7 +138,6 @@ def prf(k, m):
         else:
             output = prgDouble(v)
             v.bits = output.bits[(len(output)//2):len(output)]
-    print(v)
     return v
 
 

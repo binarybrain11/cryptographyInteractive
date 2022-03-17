@@ -6,9 +6,9 @@ use Exporter;
 use Crypt::Random qw(makerandom);
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw( se2_3OtsDistinguish hw2_1OtsDistinguish hw5_1aPrgDistinguish
+our @EXPORT = qw( se2_3OtsDistinguish hw2_1OtsDistinguish hw5_1G hw5_1aPrgDistinguish
 hw5_1bPrgDistinguish hw5_1cPrcDistinguish hw6_1PrfDistinguish
-hw6_2PrpDistinguish hw7_2CpaDistinguish Advantage );
+hw6_2PrpDistinguish hw7_2CpaDistinguish Advantage printbinary printbytes);
 
 ###############################################################################
 # Primitives
@@ -19,7 +19,7 @@ sub KeyGen {
     my $lambda = shift;
     my $k = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $k .= makerandom(Size => 8, Strength => 0);
+        $k .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $k;
 }
@@ -109,7 +109,12 @@ sub printbytes {
     my $bytes = shift;
     my $str = "";
     for (my $i = 0; $i < length($bytes); $i++) {
-        $str .= sprintf("%X", ord(substr($bytes, $i, 1)));
+        if (ord(substr($bytes, $i, 1)) == 0) {
+            $str .= "0";
+        }
+        else{
+            $str .= sprintf("%0X", ord(substr($bytes, $i, 1)));
+        }
     }
     return $str;
 }
@@ -324,12 +329,21 @@ sub hw2_1OtsDistinguish {
 # Chapter 5
 ################################################################################
 
+sub str_2_int{
+    my $c = shift;
+    my $n = 0;
+    for (my $i = 0; $i < length($c); $i++) {
+        $n += ord(substr($c, $i, 1)) << (8*(length($c) - $i));
+    }
+    return $n;
+}
+
 # "Secure" length tripling PRG. Not actually secure, but treat it as such.
 # - s is the seed for the PRG
 # - returns a random number of length 3*len(s)
 sub hw5_1G{
     my $s = shift;
-    srand($s);
+    srand(str_2_int($s));
     my $x = "";
     for (my $i = 0; $i < 3 * length($s); $i++) {
         $x .= chr(int(rand(256)));
@@ -343,14 +357,16 @@ sub hw5_1G{
 ########################################
 
 sub hw5_1aPRGreal{
-    my $s = shift;
+    my $lambda = shift;
+    my $s = KeyGen($lambda);
     my $x = hw5_1G($s);
     my $y = hw5_1G("\0" x length($s));
     return $x.$y;
 }
 
 sub hw5_1aPRGrand{
-    my $s = shift;
+    my $lambda = shift;
+    my $s = KeyGen($lambda);
     my $x = "";
     for (my $i = 0; $i < 6 * length($s); $i++) {
         $x .= chr(makerandom(Size => 8, Strength => 0));
@@ -388,7 +404,8 @@ sub hw5_1aPrgDistinguish{
 ########################################
 
 sub hw5_1bPRGreal{
-    my $s = shift;
+    my $lambda = shift;
+    my $s = KeyGen($lambda);
     my $x = hw5_1G($s);
     my $y = hw5_1G("\0" x length($s));
     my $z = "";
@@ -399,7 +416,8 @@ sub hw5_1bPRGreal{
 }
 
 sub hw5_1bPRGrand{
-    my $s = shift;
+    my $lambda = shift;
+    my $s = KeyGen($lambda);
     my $x = "";
     for (my $i = 0; $i < 3 * length($s); $i++) {
         $x .= chr(makerandom(Size => 8, Strength => 0));
@@ -437,17 +455,19 @@ sub hw5_1bPrgDistinguish{
 ########################################
 
 sub hw5_1cPRGreal{
-    my $s = shift;
+    my $lambda = shift;
+    my $s = KeyGen($lambda);
     my $combined = hw5_1G($s);
-    my $x = substr($combined, 0, length($s));
+    my $x = substr($combined, 0, $lambda);
     my $w = hw5_1G($x);
     return $combined.$w;
 }
 
 sub hw5_1cPRGrand{
-    my $s = shift;
+    my $lambda = shift;
+    my $s = KeyGen($lambda);
     my $x = "";
-    for (my $i = 0; $i < 6 * length($s); $i++) {
+    for (my $i = 0; $i < 6 * $lambda; $i++) {
         $x .= chr(makerandom(Size => 8, Strength => 0));
     }
     return $x;

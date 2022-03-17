@@ -26,4 +26,4 @@ sub exampleAttack {
 # Advantage will run the attack on a distinguisher a specified number of times
 # and report the average succes rate of distinguishing the real vs rand or left vs right libraries.
 # - Additionally, we are choosing lambda to be 4 in this example.
-print Advantage(1000, 4, \&se2_3OtsDistinguish, \&exampleAttack), "\n";
+print Advantage(1000, 1, \&se2_3OtsDistinguish, \&exampleAttack), "\n";
