@@ -27,11 +27,11 @@ class Bytes:
 
     def set(self, value):
         '''
-        Set the bits value. 
+        Set the bits value.
 
-            0 - sets all bits to 0  
+            0 - sets all bits to 0
 
-            1 - sets all bits to 1  
+            1 - sets all bits to 1
 
             Any other int - sets bits to int
         '''
@@ -188,7 +188,7 @@ def se2_3EAVESDROPR(size, mL, mR):
 
 def se2_3OtsDistinguish(size, attack):
     """
-    Chapter 2 section 3 example - Implements CTXT() and EAVESDROP() 
+    Chapter 2 section 3 example - Implements CTXT() and EAVESDROP()
     """
     scheme = Scheme()
     eavesChoice = secrets.choice([0, 1])
@@ -290,7 +290,7 @@ def __hw2_1CTXTrandom(m):
 
 def hw2_1OtsDistinguish(size, attack):
     '''
-        Chapter 2 Homework Problem 1 - Implements CTXT() and EAVESDROP() 
+        Chapter 2 Homework Problem 1 - Implements CTXT() and EAVESDROP()
     '''
     scheme = Scheme()
     eavesChoice = secrets.choice([0, 1])
@@ -341,8 +341,8 @@ def hw2_1OtsAdvantage(trials, attack):
 
 def hw5_1G(s):
     '''
-    Chapter 5 Homework Problem 1 
-        *secure* length tripling PRG. Not actually secure, but treat it as such. 
+    Chapter 5 Homework Problem 1
+        *secure* length tripling PRG. Not actually secure, but treat it as such.
 
         Parameters:
             s - seed with at least lambda bytes
@@ -356,7 +356,9 @@ def hw5_1G(s):
     return b
 
 
-def __hw5_1aPRGReal(s):
+def __hw5_1aPRGReal():
+    s = Bytes(L_SIZE)
+    s.rand()
     x = hw5_1G(s)
     b = Bytes(L_SIZE)
     b.set(0)
@@ -364,7 +366,7 @@ def __hw5_1aPRGReal(s):
     return (x + y)
 
 
-def __hw5_1aPRGRand(s):
+def __hw5_1aPRGRand():
     x = Bytes(6*L_SIZE)
     x.rand()
     return x
@@ -372,7 +374,7 @@ def __hw5_1aPRGRand(s):
 
 def hw5_1aPrgDistinguish(size, attack):
     '''
-        Chapter 5 Homework Problem 1a - Implements QUERY() 
+        Chapter 5 Homework Problem 1a - Implements QUERY()
     '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
@@ -399,7 +401,9 @@ def hw5_1aPrgAdvantage(trials, attack):
     return advantage/trials
 
 
-def __hw5_1bPRGReal(s):
+def __hw5_1bPRGReal():
+    s = Bytes(L_SIZE)
+    s.rand()
     x = hw5_1G(s)
     b = Bytes(L_SIZE)
     b.set(0)
@@ -407,7 +411,7 @@ def __hw5_1bPRGReal(s):
     return (x ^ y)
 
 
-def __hw5_1bPRGRand(s):
+def __hw5_1bPRGRand():
     x = Bytes(6*L_SIZE)
     x.rand()
     return x
@@ -442,7 +446,9 @@ def hw5_1bPrgAdvantage(trials, attack):
     return advantage/trials
 
 
-def __hw5_1cPRGReal(s):
+def __hw5_1cPRGReal():
+    s = Bytes(L_SIZE)
+    s.rand()
     x = hw5_1G(s)
     temp = Bytes(L_SIZE)
     temp.bits = x.bits[2*L_SIZE:3*L_SIZE]
@@ -450,7 +456,7 @@ def __hw5_1cPRGReal(s):
     return (x + y)
 
 
-def __hw5_1cPRGRand(s):
+def __hw5_1cPRGRand():
     x = Bytes(6*L_SIZE)
     x.rand()
     return x

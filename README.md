@@ -186,7 +186,7 @@ equal. Returns 1 if they are, 0 if they aren't.
 
 ### Bits class
 
-The python implementation uses a class to abstract away binary strings.
+The python implementation uses a class to represent binary that allows for easy manipulation. For example bitwise operations have been overloaded to match binary behavior. The bits can also be spliced using python string slicing i.e. x.bits[0:10] where x is a Bytes object.
 
 #### Constructor
 
@@ -197,9 +197,16 @@ The class takes 1 argument for size i.e. exampleBits = Bits(size)
 To set the bits to a specific value you can use the Bits.set() method.
 The set method takes an int argument. 0 or 1 will set the entire string to 0's or 1's. Any other integer will set the bits to the binary representation of the number.
 
-#### Bitwise operators
+### Operators and Methods
 
-The bits class supports python style bitwise operators such as +, ^ and |
+#### Supported Operators:
+
+-   +,^,|,==
+
+#### Overloaded methods
+
+-   print: prints binary string
+-   len: Returns length in bytes
 
 ### Attack Function
 
