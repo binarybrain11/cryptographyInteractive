@@ -13,4 +13,4 @@ def exampleAttack(size, scheme):
 
 print(se2_3OtsDistinguish(1, exampleAttack))
 
-print(se2_30tsAdvantage(1000, exampleAttack))
+print(advantage(1000, exampleAttack, se2_3OtsDistinguish))

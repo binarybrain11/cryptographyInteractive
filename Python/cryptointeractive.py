@@ -165,6 +165,12 @@ def prp(k, v):
     return v3+v4
 
 
+def advantage(trials, attack, distinguisher):
+    advantage = 0
+    for i in range(0, trials):
+        advantage += distinguisher(2, attack)
+    return advantage/trials
+
 ########################### Chapter 2 ###########################
 
 
@@ -295,9 +301,9 @@ def hw2_1OtsDistinguish(size, attack):
         scheme.eavesdrop = __hw2_1EAVESDROPR
 
     if ctxtChoice:
-        scheme.ctxt = __se2_3CTXTrand
+        scheme.ctxt = __hw2_1CTXTrandom
     else:
-        scheme.ctxt = __se2_3CTXTreal
+        scheme.ctxt = __hw2_1CTXTreal
 
     result = attack(size, scheme)
 
