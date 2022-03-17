@@ -208,6 +208,10 @@ The set method takes an int argument. 0 or 1 will set the entire string to 0's o
 -   print: prints binary string
 -   len: Returns length in bytes
 
+### Lambda
+
+To change the size of lambda, adjust the L_SIZE constant at the top of the cryptointeractive.py file.
+
 ### Attack Function
 
 The attacking function will return a string to indicated its guess
@@ -226,25 +230,25 @@ example a message of all zeros of length lambda could be written as:
 
     $message = chr(0x0) x $lambda;
 
-
 ### Attack Function
 
 The attacking function will be passed two arguments: lambda and scheme.
-These can be captured with the line  
+These can be captured with the line
 
     my ($lambda, $scheme) = @_;
-    
+
 #### Scheme
 
 `$scheme` is a hash that contains the relevant subroutines for the problem you
-are working on. The following keys will return subroutines, if they exist for the problem:  
+are working on. The following keys will return subroutines, if they exist for the problem:
 
-    $scheme->{CTXT}  
-    $scheme->{EAVESDROP}  
-    $scheme->{QUERY}  
-    $scheme->{LOOKUP}  
+    $scheme->{CTXT}
+    $scheme->{EAVESDROP}
+    $scheme->{QUERY}
+    $scheme->{LOOKUP}
 
 #### Return value
+
 The attacking function will return a string to indicated its guess
 for distinguishing the actual libraries. The guesses are:  
 'left' for the Left library in a left vs right attack  
