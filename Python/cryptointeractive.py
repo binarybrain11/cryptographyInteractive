@@ -451,7 +451,7 @@ def __hw5_1cPRGReal():
     s.rand()
     x = hw5_1G(s)
     temp = Bytes(L_SIZE)
-    temp.bits = x.bits[2*L_SIZE:3*L_SIZE]
+    temp.bits = x.bits[0:L_SIZE]
     y = hw5_1G(temp)
     return (x + y)
 
@@ -596,7 +596,7 @@ def hw6_2PrpDistinguish(size, attack):
 def __hw7_2cpaEnc(k, m):
     s1 = Bytes(L_SIZE)
     s1.rand()
-    s2 = s1 + m
+    s2 = s1 ^ m
     x = prp(k, s1)
     y = prp(k, s2)
     return x+y
