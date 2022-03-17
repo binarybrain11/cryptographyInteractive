@@ -9,7 +9,7 @@ sub exampleAttack {
     my ($lambda, $scheme) = @_;
 
     # Message is a string of zero bytes of length $lambda
-    my $m = "\0" x $lambda;
+    my $m = chr(0x0) x $lambda;
 
     # Generate ciphertext
     my $c = $scheme->{CTXT}->($m);
