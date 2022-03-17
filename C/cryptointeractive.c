@@ -754,7 +754,7 @@ int hw2_1OtsDistinguish(char (*attack)(Scheme*)){
 char* hw5_1G(char* s){
     char* num = malloc(3*lambda*sizeof(char));
     linearDoubleG(num, s);
-    /* Using the upper bits as seed to next call, then replacing them */
+    /* Using the lower bits as seed to next call, then replacing them */
     linearDoubleG(num + lambda, num + lambda);
     return num;
 }
@@ -768,8 +768,8 @@ char* hw5_1aPRGreal(){
     char* y = hw5_1G(zero);
     /* We return x||y where x and y are each 3*lambda bytes long */
     char* res = malloc(6*lambda*sizeof(char));
-    memcpy(res, y, 3*lambda*sizeof(char));
-    memcpy(res+3*lambda, x, 3*lambda*sizeof(char));
+    memcpy(res, x, 3*lambda*sizeof(char));
+    memcpy(res+3*lambda, y, 3*lambda*sizeof(char));
     free(s);
     free(zero);
     free(x);
@@ -855,12 +855,12 @@ char* hw5_1cPRGreal(){
     randomBytes(s,sizeof(char)*lambda);
     /* xyz = x||y||z = G(s) */
     char* xyz = hw5_1G(s);
-    char* x = xyz + 2*lambda;
+    char* x = xyz;
     char* w = hw5_1G(x);
     /* res = x||y||z||w */
     char* res = malloc(6*lambda*sizeof(char));
-    memcpy(res, w, sizeof(char)*lambda*3);
-    memcpy(res+3*lambda, xyz, sizeof(char)*lambda*3);
+    memcpy(res, xyz, sizeof(char)*lambda*3);
+    memcpy(res+3*lambda, w, sizeof(char)*lambda*3);
     
     free(s);
     free(xyz);
@@ -907,8 +907,8 @@ char* hw6_1Prf(char* k, char* m){
     /* linearPrf is defined to return lambda bits, but that pointer is 
      * assigned 2*lambda bits, so we will use those bits too.
      */
-    char* tmp = linearPrf(k,m);
-    char* res = linearPrf(k,tmp);
+    char* res = linearPrf(k,m);
+    char* tmp = linearPrf(k,res);
     memcpy(res+lambda, tmp, sizeof(char)*lambda);
     free(tmp);
     return res;
@@ -962,16 +962,16 @@ int hw6_1PrfDistinguish(char (*attack)(Scheme*)){
  */
 char* hw6_2Prp(char* k, char* m){
     char* res = malloc(sizeof(char)*2*lambda);
-    char* x = m+lambda;
-    char* y = m;
+    char* x = m;
+    char* y = m+lambda;
     char* y1 = x;
     char* x1 = linearPrf(k,x);
     xorBytes(x1, y, x1);
     char* x2 = x1;
     char* y2 = linearPrf(k+lambda,y1);
     xorBytes(y2, x1, y2);
-    memcpy(res, y2, sizeof(char)*lambda);
-    memcpy(res + lambda, x2, sizeof(char)*lambda);
+    memcpy(res, x2, sizeof(char)*lambda);
+    memcpy(res + lambda, y2, sizeof(char)*lambda);
     free(x1);
     free(y2);
     return res;
@@ -1029,8 +1029,8 @@ char* hw7_2CpaEnc(char* k, char* m){
     randomBytes(s1, lambda);
     char* s2 = malloc(sizeof(char)*2*lambda);
     xorBytes(s2, s1, m);
-    char* x = linearPrp(k,s1);
-    char* c = linearPrp(k,s2);
+    char* c = linearPrp(k,s1);
+    char* x = linearPrp(k,s2);
     memcpy(c+lambda, x, lambda*sizeof(char));
     free(s1);
     free(s2);

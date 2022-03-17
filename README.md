@@ -145,11 +145,11 @@ We can access x and y by doing pointer arithmetic on c:
 
 ```
 char* c = exampleFunction();
-char* x = c + lambda;
-char* y = c;
+char* x = c;
+char* y = c + lambda;
 ```
 
-x stores the bytes that occur after lambda bytes while y stores the lambda
+y stores the bytes that occur after lambda bytes while x stores the lambda
 least significant bytes. The same would be true if a function returns x||y.
 
 The attacking function will return a single character to indicated its guess
