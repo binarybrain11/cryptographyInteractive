@@ -168,7 +168,7 @@ def prp(k, v):
 def advantage(trials, attack, distinguisher):
     advantage = 0
     for i in range(0, trials):
-        advantage += distinguisher(2, attack)
+        advantage += distinguisher(L_SIZE, attack)
     return advantage/trials
 
 ########################### Chapter 2 ###########################
