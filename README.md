@@ -209,3 +209,30 @@ for distinguishing the actual libraries. The guesses are:
 'right' for the Right library in a left vs right attack  
 'random' for the random library in a real vs random attack  
 'real' for the real library in a real vs random attack
+
+# Perl
+
+Data is passed to subroutines as a list of bytes casted to characters. For
+example a message of all zeros of length lambda could be written as:
+
+    $message = chr(0x0) x $lambda;
+
+
+### Attack Function
+
+The attacking function will be passed two arguments: lambda and scheme.
+These can be captured with the line `my ($lambda, $scheme) = @_;`
+
+`$scheme` is a hash that contains the relevant subroutines for the problem you
+are working on. The following keys will return subroutines, if they exist for the problem:  
+    $scheme->{CTXT}  
+    $scheme->{EAVESDROP}  
+    $scheme->{QUERY}  
+    $scheme->{LOOKUP}  
+
+The attacking function will return a string to indicated its guess
+for distinguishing the actual libraries. The guesses are:  
+'left' for the Left library in a left vs right attack  
+'right' for the Right library in a left vs right attack  
+'random' for the random library in a real vs random attack  
+'real' for the real library in a real vs random attack
