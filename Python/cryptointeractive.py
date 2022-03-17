@@ -37,15 +37,15 @@ class Bytes:
         '''
         if value == 1:
             self.bits = int.to_bytes(
-                pow(2, self.size*8) - 1, self.size, sys.byteorder)
+                pow(2, self.size*8) - 1, self.size, "big")
             return self
 
         if value == 0:
             self.bits = int.to_bytes(
-                pow(1, self.size) - 1, self.size, sys.byteorder)
+                pow(1, self.size) - 1, self.size, "big")
             return self
 
-        self.bits = int.to_bytes(value, self.size, sys.byteorder)
+        self.bits = int.to_bytes(value, self.size, "big")
         return self
 
     def rand(self):
@@ -53,10 +53,10 @@ class Bytes:
             Randomizes bits
         '''
         self.bits = (secrets.randbits(self.size*8)
-                     ).to_bytes(self.size, sys.byteorder)
+                     ).to_bytes(self.size, "big")
 
     def __str__(self):
-        x = bin(int.from_bytes(self.bits, sys.byteorder, signed=False))[2:]
+        x = bin(int.from_bytes(self.bits, "big", signed=False))[2:]
         while len(x) < len(self.bits)*8:
             x = '0'+x
         return x
@@ -66,10 +66,10 @@ class Bytes:
         yLen = len(other.bits)
         if xLen != yLen:
             raise TypeError("Cannot AND variable length bits")
-        self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
-        other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
+        self_int = int.from_bytes(self.bits, "big", signed=False)
+        other_int = int.from_bytes(other.bits, "big", signed=False)
         result = Bytes(self.size)
-        result.bits = (self_int & other_int).to_bytes(xLen, sys.byteorder)
+        result.bits = (self_int & other_int).to_bytes(xLen, "big")
         return result
 
     def __or__(self, other):
@@ -77,10 +77,10 @@ class Bytes:
         yLen = len(other.bits)
         if xLen != yLen:
             raise TypeError("Cannot OR variable length bits")
-        self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
-        other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
+        self_int = int.from_bytes(self.bits, "big", signed=False)
+        other_int = int.from_bytes(other.bits, "big", signed=False)
         result = Bytes(self.size)
-        result.bits = (self_int | other_int).to_bytes(xLen, sys.byteorder)
+        result.bits = (self_int | other_int).to_bytes(xLen, "big")
         return result
 
     def __xor__(self, other):
@@ -88,15 +88,15 @@ class Bytes:
         yLen = len(other.bits)
         if xLen != yLen:
             raise TypeError("Cannot XOR variable length bits")
-        self_int = int.from_bytes(self.bits, sys.byteorder, signed=False)
-        other_int = int.from_bytes(other.bits, sys.byteorder, signed=False)
+        self_int = int.from_bytes(self.bits, "big", signed=False)
+        other_int = int.from_bytes(other.bits, "big", signed=False)
         result = Bytes(self.size)
-        result.bits = (self_int ^ other_int).to_bytes(xLen, sys.byteorder)
+        result.bits = (self_int ^ other_int).to_bytes(xLen, "big")
         return result
 
     def __add__(self, other):
         retBits = Bytes(len(self.bits) + len(other.bits))
-        retBits.bits = other.bits + self.bits
+        retBits.bits = self.bits + other.bits
         return retBits
 
     def __eq__(self, other):
@@ -120,11 +120,11 @@ class Scheme:
 
 
 def randBytes(size):
-    return (secrets.randbits(size)).to_bytes(size, sys.byteorder)
+    return (secrets.randbits(size)).to_bytes(size, "big")
 
 
 def keyGen(size):
-    return (secrets.randbits(size*8)).to_bytes(size, sys.byteorder)
+    return (secrets.randbits(size*8)).to_bytes(size, "big")
 
 
 def prf(k, m):
@@ -144,7 +144,7 @@ def prf(k, m):
 
 
 def prgDouble(s):
-    random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
+    random.seed(int.from_bytes(s.bits, "big", signed=False))
     x = random.randint(0, pow(2, 2 * len(s)*8))
     y = Bytes(2*len(s))
     y.set(x)
@@ -349,7 +349,7 @@ def hw5_1G(s):
 
         Returns: Bytes(3 L_SIZE)
     '''
-    random.seed(int.from_bytes(s.bits, sys.byteorder, signed=False))
+    random.seed(int.from_bytes(s.bits, "big", signed=False))
     x = random.randint(0, pow(2, 3 * L_SIZE*8))
     b = Bytes(3 * L_SIZE)
     b.set(x)
@@ -419,7 +419,7 @@ def __hw5_1bPRGRand():
 
 def hw5_1bPrgDistinguish(size, attack):
     '''
-        Chapter 5 Homework Problem 1b - Implements QUERY() 
+        Chapter 5 Homework Problem 1b - Implements QUERY()
     '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
@@ -464,7 +464,7 @@ def __hw5_1cPRGRand():
 
 def hw5_1cPrgDistinguish(size, attack):
     '''
-        Chapter 5 Homework Problem 1c - Implements QUERY() 
+        Chapter 5 Homework Problem 1c - Implements QUERY()
     '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
@@ -511,7 +511,7 @@ def __hw6_1LOOKUPrand(x):
 
 def hw6_1PrfDistinguish(size, attack):
     '''
-        Chapter 6 Homework Problem 1 - Implements LOOKUP() 
+        Chapter 6 Homework Problem 1 - Implements LOOKUP()
     '''
     scheme = Scheme()
     ctxtChoice = secrets.choice([0, 1])
@@ -567,7 +567,7 @@ def __hw6_2LOOKUPrand(x):
 
 def hw6_2PrpDistinguish(size, attack):
     """
-    Chapter 6 Homework Problem 2 - Implements LOOKUP() 
+    Chapter 6 Homework Problem 2 - Implements LOOKUP()
         * Lamdbda must be an even value
     """
     scheme = Scheme()
@@ -673,3 +673,14 @@ def hw7_2PrfAdvantage(trials, attack):
     for i in range(0, trials):
         advantage += hw6_1PrfDistinguish(L_SIZE, attack)
     return advantage/trials
+
+
+x = Bytes(2)
+y = Bytes(2)
+
+x.set(1)
+print(x)
+y.set(0)
+z = x + y
+print(z)
+b = Bytes(2)
