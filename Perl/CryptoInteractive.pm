@@ -8,7 +8,7 @@ use Crypt::Random qw(makerandom);
 our @ISA = qw(Exporter);
 our @EXPORT = qw( se2_3OtsDistinguish hw2_1OtsDistinguish hw5_1aPrgDistinguish
 hw5_1bPrgDistinguish hw5_1cPrcDistinguish hw6_1PrfDistinguish
-hw6_2PrpDistinguish Advantage );
+hw6_2PrpDistinguish hw7_2CpaDistinguish Advantage );
 
 ###############################################################################
 # Primitives
@@ -19,7 +19,7 @@ sub KeyGen {
     my $lambda = shift;
     my $k = "";
     for (my $i = 0; $i < $lambda; $i++) {
-        $k .= chr(int(rand(256)));
+        $k .= makerandom(Size => 1, Strength => 0);
     }
     return $k;
 }
@@ -294,7 +294,7 @@ sub hw2_1OtsDistinguish {
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 1, Strength => 0);
     if ($choice & 1){
         $scheme{'EAVESDROP'} = \&hw2_1EAVESDROPL;
     }
@@ -368,7 +368,7 @@ sub hw5_1aPrgDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 1, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1aPRGrand;
     }
@@ -417,7 +417,7 @@ sub hw5_1bPrgDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 1, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1bPRGrand;
     }
@@ -463,7 +463,7 @@ sub hw5_1cPrcDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 1, Strength => 0);
     if ($choice & 2){
         $scheme{'QUERY'} = \&hw5_1cPRGrand;
     }
@@ -528,7 +528,7 @@ sub hw6_1PrfDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 1, Strength => 0);
     if ($choice & 1){
         $scheme{'LOOKUP'} = \&hw6_1LOOKUPrand;
     }
@@ -602,7 +602,7 @@ sub hw6_2PrpDistinguish{
     my $attack = shift;
     my %scheme = ();
 
-    my $choice = int(rand(256));
+    my $choice = makerandom(Size => 1, Strength => 0);
     if ($choice & 1){
         $scheme{'LOOKUP'} = \&hw6_2LOOKUPrand;
     }
@@ -623,8 +623,6 @@ sub hw6_2PrpDistinguish{
     return 0;
 }
 
-#TODO: Everything below this line is not yet implemented.
-
 ################################################################################
 # Chapter 7
 ################################################################################
@@ -638,5 +636,83 @@ sub hw6_2PrpDistinguish{
 sub hw7_2CpaEnc{
     my $k = shift;
     my $m = shift;
+    my $s1 = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $s1 .= chr(makerandom(Size => 1, Strength => 0));
+    }
+    my $s2 = "";
+    for (my $i = 0; $i < length($m); $i++) {
+        $s2 .= chr(ord(substr($s1, $i, 1)) ^ ord(substr($m, $i, 1)));
+    }
+    my $x = prp($k, $s1);
+    my $y = prp($k, $s2);
+    return $x . $y;
+}
+
+sub hw7_2EAVESDROPL{
+    my $ml = shift;
+    my $mr = shift;
+    my $k = KeyGen(3 * length($ml) / 2);
+    my $c = hw7_2CpaEnc($k, $ml);
+    return $c;
+}
+
+sub hw7_2EAVESDROPR{
+    my $ml = shift;
+    my $mr = shift;
+    my $k = KeyGen(3 * length($ml) / 2);
+    my $c = hw7_2CpaEnc($k, $mr);
+    return $c;
+}
+
+sub hw7_2CTXTreal{
+    my $m = shift;
+    my $k = KeyGen(3 * length($m) / 2);
+    my $c = hw7_2CpaEnc($k, $m);
+    return $c;
+}
+
+sub hw7_2CTXTrand{
+    my $m = shift;
+    my $c = KeyGen(length($m));
+    return $c;
+}
+
+# Chapter 7 Homeowrk Problem 2
+# Implements CTXT() and EAVESDROP() 
+sub hw7_2CpaDistinguish{
+    my $lambda = shift;
+    my $attack = shift;
+    my %scheme = ();
+
+    my $choice = makerandom(Size => 1, Strength => 0);
+    if ($choice & 1){
+        $scheme{'EAVESDROP'} = \&hw7_2EAVESDROPL;
+    }
+    else{
+        $scheme{'EAVESDROP'} = \&hw7_2EAVESDROPR;
+    }
+    if ($choice & 2){
+        $scheme{'CTXT'} = \&hw7_2CTXTrand;
+    }
+    else{
+        $scheme{'CTXT'} = \&hw7_2CTXTreal;
+    }
+
+    my $result = $attack->($lambda, \%scheme);
+
+    if ((($choice & 1)) && ($result eq "left")){
+        return 1;
+    }
+    if (!($choice & 1) && ($result eq "right")){
+        return 1;
+    }
+    if ((($choice & 2)) && ($result eq "random")){
+        return 1;
+    }
+    if (!($choice & 2) && ($result eq "real")){
+        return 1;
+    }
+    return 0;
 }
 1;

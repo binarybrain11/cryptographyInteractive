@@ -14,6 +14,7 @@ sub exampleAttack {
     # Generate ciphertext
     my $c = $scheme->{CTXT}->($m);
 
+    $scheme
     # if ciphertext and message are the same, we can distinguish real from rand
     if ($c eq $m){
         return "real";
@@ -23,4 +24,7 @@ sub exampleAttack {
     }
 }
 
-print Advantage(1000, 1, \&se2_3OtsDistinguish, \&exampleAttack), "\n";
+# Advantage will run the attack on a distinguisher a specified number of times
+# and report the average succes rate of distinguishing the real vs rand or left vs right libraries.
+# - Additionally, we are choosing lambda to be 4 in this example.
+print Advantage(1000, 4, \&se2_3OtsDistinguish, \&exampleAttack), "\n";
