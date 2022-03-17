@@ -3,8 +3,6 @@
 
 #include "cryptointeractive.h"
 
-lambda = 4;
-
 char se2_3OtsExampleAttack(Scheme *scheme){
     char* m = malloc(sizeof(char)*lambda);
     zeroBytes(m, lambda);
@@ -28,6 +26,8 @@ char se2_3OtsExampleAttack(Scheme *scheme){
 }
 
 int main(){
+    /* Redefine lambda here if you desire */
+    lambda = 4;
     /*                       your attack here   */
     if (se2_3OtsDistinguish(se2_3OtsExampleAttack) == 1){
         printf("Attack successful!\n");
